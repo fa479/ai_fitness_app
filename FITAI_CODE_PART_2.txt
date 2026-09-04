@@ -1,0 +1,2660 @@
+              'Mobility — Gentle movement can be considered when appropriate.',
+              'Strength — Progress gradually rather than immediately returning to previous training.',
+              'Rest — Include recovery periods and respond to energy and comfort.',
+            ],
+          ),
+
+          const Text(
+            'Postpartum Recovery Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Postpartum Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Start with comfortable short walks. Increase duration gradually as recovery progresses. Listen to your body.',
+            benefit: 'Supports gentle return to activity and mood balance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Postpartum Mobility',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Perform gentle stretches and mobility exercises. Focus on comfortable range of motion. Avoid forcing movements.',
+            benefit: 'Helps restore flexibility and reduce tension',
+          ),
+
+          const _WellnessSection(
+            title: '?? Body Signals',
+            icon: Icons.favorite_outline,
+            items: [
+              'Do not force painful movements.',
+              'Stop an activity if something feels unsafe or concerning.',
+              'For complications, surgery, symptoms or individual medical decisions, seek professional advice.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Pregnancy and postpartum activity and nutrition should be individualized with appropriate professional guidance.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class HormonalWellnessScreen extends StatefulWidget {
+  const HormonalWellnessScreen({super.key});
+
+  @override
+  State<HormonalWellnessScreen> createState() => _HormonalWellnessScreenState();
+}
+
+class _HormonalWellnessScreenState extends State<HormonalWellnessScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+
+    if (!mounted) return;
+
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final repRange = personalizer.personalizedRepRange();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+    final recoveryGuidance = personalizer.personalizedRecoveryGuidance();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('hormonalWellness'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text(
+            'Everyday Hormonal Wellness',
+            style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'A personalized wellness layer for movement, meals, recovery and daily tracking.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '?? Movement',
+            icon: Icons.fitness_center_outlined,
+            items: [
+              'Walking — $walkDuration based on your profile.',
+              'Mobility — $mobilityDuration of gentle movement.',
+              'Supported squat — $repRange.',
+              'Wall push-up — $repRange.',
+              'Glute bridge — $repRange.',
+              'Choose intensity according to your experience and energy.',
+            ],
+          ),
+
+          const Text(
+            'Movement Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Comfortable Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a comfortable pace. Maintain relaxed posture and breathe naturally. Adjust intensity based on energy levels.',
+            benefit: 'Supports cardiovascular health and daily energy',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Mobility',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Perform comfortable shoulder rolls, hip circles, and ankle circles. Move within a comfortable range without forcing.',
+            benefit: 'Maintains flexibility and reduces stiffness',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Supported Squat',
+            durationOrReps: repRange,
+            instructions:
+                'Stand with feet shoulder-width apart. Slowly bend knees and hips while keeping chest upright. Return to standing with control.',
+            benefit: 'Builds lower-body strength and stability',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Wall Push-Up',
+            durationOrReps: repRange,
+            instructions:
+                'Stand facing a wall. Place hands on wall and bend elbows toward it. Push back to starting position with control.',
+            benefit: 'Develops upper-body strength',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Glute Bridge',
+            durationOrReps: repRange,
+            instructions:
+                'Lie on your back with knees bent. Lift hips slowly while keeping movement controlled. Lower gently and repeat.',
+            benefit: 'Strengthens glutes and core muscles',
+          ),
+
+          const _WellnessSection(
+            title: '??? Balanced Eating',
+            icon: Icons.restaurant_outlined,
+            items: [
+              'Breakfast — Eggs + toast + fruit, OR oats + milk/yogurt + fruit + nuts.',
+              'Lunch — Daal/chickpeas + roti + vegetables, OR chicken/fish + rice + vegetables.',
+              'Snack — Yogurt + fruit, OR roasted chana.',
+              'Dinner — Protein-containing food + roti/rice + vegetables.',
+              'Hydration — Drink regularly throughout the day.',
+              'FitAI should avoid restrictive meal prescriptions based only on body measurements.',
+            ],
+          ),
+
+          const Text(
+            'Meal Details',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Breakfast',
+              baseFoodOptions: [
+                'Eggs + toast + fruit',
+                'Oats + milk/yogurt + fruit + nuts',
+              ],
+              context: 'hormonal wellness',
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Lunch',
+              baseFoodOptions: [
+                'Daal/chickpeas + roti + vegetables',
+                'Chicken/fish + rice + vegetables',
+              ],
+              context: 'hormonal wellness',
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Snack',
+              baseFoodOptions: [
+                'Yogurt + fruit',
+                'Roasted chana',
+              ],
+              context: 'hormonal wellness',
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Dinner',
+              baseFoodOptions: [
+                'Protein-containing food + roti/rice + vegetables',
+              ],
+              context: 'hormonal wellness',
+            ),
+          ),
+
+          _WellnessSection(
+            title: '?? Sleep & Recovery',
+            icon: Icons.bedtime_outlined,
+            items: [
+              'Keep a consistent sleep/wake routine when possible.',
+              'Create a calm wind-down period before sleep.',
+              recoveryGuidance,
+              'Gentle walking or mobility can be used for recovery when comfortable.',
+              'Track recovery trends instead of chasing perfect numbers.',
+            ],
+          ),
+
+          const _WellnessSection(
+            title: '?? Daily Wellbeing',
+            icon: Icons.mood_outlined,
+            items: [
+              'Energy — Low, medium or good.',
+              'Sleep quality — Record how rested you feel.',
+              'Mood — Record general mood.',
+              'Movement — Track activity completed.',
+              'Hydration — Track general fluid habits.',
+              'Use patterns as wellness information, not as a diagnosis.',
+            ],
+          ),
+
+          const _WellnessSection(
+            title: '?? Personalization',
+            icon: Icons.tune_outlined,
+            items: [
+              'Profile — Age, height, weight and goal are read from the saved profile.',
+              'Time — Choose the time available for activity.',
+              'Experience — Beginner, intermediate or experienced.',
+              'Location — Home or gym.',
+              'Equipment — None, basic or gym equipment.',
+              'Energy — Low, medium or good.',
+              'Activity preference — Walking, strength, mobility or mixed.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Hormonal health is individual. FitAI provides general wellness information and does not diagnose hormonal disorders.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class WomensSafetyModeScreen extends StatefulWidget {
+  const WomensSafetyModeScreen({super.key});
+
+  @override
+  State<WomensSafetyModeScreen> createState() => _WomensSafetyModeScreenState();
+}
+
+class _WomensSafetyModeScreenState extends State<WomensSafetyModeScreen> {
+  bool workoutCheckIn = false;
+  bool awarenessReminder = true;
+  bool lowDistraction = false;
+
+  Future<void> _toggleCheckIn(bool value) async {
+    setState(() {
+      workoutCheckIn = value;
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          value ? L.t('checkInEnabled') : L.t('checkInDisabled'),
+        ),
+      ),
+    );
+  }
+
+  void _quickExit() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showSafetyInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(L.t('safetyMode')),
+        content: Text(L.t('safetyModeDetail')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('safetyMode'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            onPressed: _showSafetyInfo,
+            icon: const Icon(Icons.info_outline),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.health_and_safety_outlined, size: 38),
+                SizedBox(height: 12),
+                Text(
+                  'Safety First',
+                  style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Safety-focused controls and reminders for workouts at home, in a gym or outdoors.',
+                  style: TextStyle(height: 1.5),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          const _WellnessSection(
+            title: '?? Safe Workout Location',
+            icon: Icons.location_on_outlined,
+            items: [
+              'Prefer familiar and well-lit places.',
+              'Choose environments where help is available if needed.',
+              'For outdoor activity, consider telling a trusted person your general plan.',
+              'At home, keep the workout space clear.',
+            ],
+          ),
+
+          const _WellnessSection(
+            title: '?? Trusted Contact',
+            icon: Icons.person_outline,
+            items: [
+              'FitAI should allow the user to choose a trusted contact.',
+              'Contact information must remain private.',
+              'Any contact sharing should require explicit user permission.',
+              'Do not automatically expose contact information.',
+            ],
+          ),
+
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.check_circle_outline),
+              title: const Text(
+                'Workout Check-In',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Mark the beginning and completion of a workout.',
+              ),
+              value: workoutCheckIn,
+              onChanged: _toggleCheckIn,
+            ),
+          ),
+
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.visibility_outlined),
+              title: const Text(
+                'Awareness Reminder',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Keep awareness reminders available during outdoor activity.',
+              ),
+              value: awarenessReminder,
+              onChanged: (value) {
+                setState(() {
+                  awarenessReminder = value;
+                });
+              },
+            ),
+          ),
+
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.do_not_disturb_on_outlined),
+              title: const Text(
+                'Low-Distraction Mode',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Reduce unnecessary app distractions during a workout.',
+              ),
+              value: lowDistraction,
+              onChanged: (value) {
+                setState(() {
+                  lowDistraction = value;
+                });
+              },
+            ),
+          ),
+
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _quickExit,
+              icon: const Icon(Icons.exit_to_app_outlined),
+              label: const Text('Quick Exit Workout'),
+            ),
+          ),
+
+          const _WellnessSection(
+            title: '?? Awareness',
+            icon: Icons.volume_up_outlined,
+            items: [
+              'Stay aware of your surroundings during outdoor activity.',
+              'Avoid audio settings that prevent awareness of nearby surroundings.',
+              'Keep important calls and emergency notifications available.',
+            ],
+          ),
+
+          const _WellnessSection(
+            title: '?? Emergency Help',
+            icon: Icons.emergency_outlined,
+            items: [
+              'If you feel unsafe, stop the activity and move toward a safer place when possible.',
+              'Contact a trusted person when appropriate.',
+              'Use the appropriate local emergency service during an actual emergency.',
+              'FitAI should never claim to replace emergency services.',
+            ],
+          ),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'Safety Mode provides supportive controls and reminders. '
+              'It cannot guarantee personal safety or replace local emergency services.',
+              style: TextStyle(
+                color: colorScheme.onErrorContainer,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WomenInfoScreen extends StatelessWidget {
+  final String title;
+  final String intro;
+  final List<_WomenInfoItem> cards;
+
+  const _WomenInfoScreen({
+    required this.title,
+    required this.intro,
+    required this.cards,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                intro,
+                style: const TextStyle(fontSize: 14, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ...cards.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Material(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(18),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _WomenInfoDetailScreen(
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            icon: item.icon,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(item.icon, color: colorScheme.primary),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  item.subtitle,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.4,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WomenInfoItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _WomenInfoItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+}
+
+class _WomenInfoDetailScreen extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _WomenInfoDetailScreen({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  Map<String, dynamic> _getContent() {
+    final data = <String, Map<String, dynamic>>{
+      'Menstrual Phase': {
+        'section': 'Cycle-Aware Nutrition',
+        'intro':
+            'Support your routine with regular meals, hydration and foods that feel nourishing and satisfying.',
+        'focusTitle': 'Nutrition Focus',
+        'focus':
+            'Aim for balanced meals with a variety of foods and adjust choices according to your appetite and comfort.',
+        'actions': [
+          'Keep meals regular when possible.',
+          'Include protein, carbohydrates and healthy fats.',
+          'Choose fruits and vegetables you enjoy.',
+          'Stay hydrated throughout the day.',
+        ],
+        'tip':
+            'Personalize meals around your energy, appetite and comfort rather than following strict rules.',
+      },
+      'Follicular Phase': {
+        'section': 'Cycle-Aware Nutrition',
+        'intro':
+            'Use balanced meals to support daily activity, training and recovery as your routine changes.',
+        'focusTitle': 'Nutrition Focus',
+        'focus':
+            'Combine protein, whole-food carbohydrates, healthy fats and colorful produce for balanced energy.',
+        'actions': [
+          'Build meals around a reliable protein source.',
+          'Add fiber-rich foods you enjoy.',
+          'Include carbohydrates to support activity.',
+          'Keep hydration consistent.',
+        ],
+        'tip':
+            'Choose portions and meal timing that fit your personal routine and hunger.',
+      },
+      'Ovulatory Phase': {
+        'section': 'Cycle-Aware Nutrition',
+        'intro':
+            'Maintain balanced meals and regular hydration while supporting your usual activity level.',
+        'focusTitle': 'Nutrition Focus',
+        'focus':
+            'Prioritize variety instead of relying on one "perfect" food or strict eating pattern.',
+        'actions': [
+          'Include a variety of fruits and vegetables.',
+          'Add protein to meals for balance.',
+          'Choose satisfying carbohydrates.',
+          'Drink water regularly.',
+        ],
+        'tip':
+            'Your needs can vary from cycle to cycle, so use your own comfort and routine as important guides.',
+      },
+      'Luteal Phase': {
+        'section': 'Cycle-Aware Nutrition',
+        'intro':
+            'Focus on regular, satisfying meals and habits that support steady energy and comfort.',
+        'focusTitle': 'Nutrition Focus',
+        'focus':
+            'Choose nutrient-rich foods and avoid overly restrictive approaches to eating.',
+        'actions': [
+          'Keep convenient balanced snacks available.',
+          'Include protein and fiber in meals.',
+          'Maintain regular hydration.',
+          'Plan simple meals for busy days.',
+        ],
+        'tip':
+            'Allow flexibility and adjust meals according to hunger, energy and comfort.',
+      },
+      'Movement': {
+        'section': 'PCOS Support',
+        'intro':
+            'Choose sustainable movement that fits your experience level, routine and comfort.',
+        'focusTitle': 'Suggested Approach',
+        'focus':
+            'Consistency and manageable activity can be more useful than pushing for maximum intensity.',
+        'actions': [
+          'Try comfortable walking or other enjoyable movement.',
+          'Include beginner-friendly strength work if suitable.',
+          'Start gradually and build your routine over time.',
+          'Plan recovery and rest when needed.',
+        ],
+        'tip':
+            'Personalize your routine based on energy, comfort and professional guidance when relevant.',
+      },
+      'Balanced Nutrition': {
+        'section': 'PCOS Support',
+        'intro':
+            'Build flexible, balanced meals instead of following extreme food restrictions.',
+        'focusTitle': 'Meal Balance',
+        'focus':
+            'Include a variety of protein, vegetables, fruit, whole grains and healthy fats according to your preferences.',
+        'actions': [
+          'Build simple meals you can repeat easily.',
+          'Include protein in meals when practical.',
+          'Choose fiber-rich foods you enjoy.',
+          'Keep hydration part of your routine.',
+        ],
+        'tip':
+            'Nutrition needs are individual. This app provides general wellness information, not medical treatment.',
+      },
+      'Recovery': {
+        'section': 'PCOS Support',
+        'intro':
+            'Recovery is an important part of maintaining a sustainable fitness routine.',
+        'focusTitle': 'Recovery Focus',
+        'focus':
+            'Balance activity with sleep, rest and manageable training intensity.',
+        'actions': [
+          'Plan rest between demanding sessions.',
+          'Keep a consistent sleep routine when possible.',
+          'Choose lighter movement on low-energy days.',
+          'Avoid forcing yourself through discomfort.',
+        ],
+        'tip':
+            'Track which routines help you feel recovered and adjust your plan gradually.',
+      },
+      'Personalization': {
+        'section': 'PCOS Support',
+        'intro':
+            'Your routine should adapt to your own lifestyle, energy and preferences.',
+        'focusTitle': 'Personalization Focus',
+        'focus':
+            'Notice patterns in activity, recovery and daily wellbeing to make practical adjustments.',
+        'actions': [
+          'Track energy and comfort.',
+          'Notice which activities feel sustainable.',
+          'Adjust workout intensity gradually.',
+          'Build habits that fit your daily schedule.',
+        ],
+        'tip':
+            'Personalization means finding a routine you can maintain comfortably over time.',
+      },
+      'During Pregnancy': {
+        'section': 'Pregnancy & Postpartum',
+        'intro':
+            'Pregnancy activity should be individualized according to personal circumstances and professional guidance.',
+        'focusTitle': 'Wellness Focus',
+        'focus':
+            'Prioritize comfort, appropriate movement and professional guidance over performance goals.',
+        'actions': [
+          'Follow guidance from your qualified healthcare professional.',
+          'Choose activity appropriate to your circumstances.',
+          'Stay aware of comfort and energy changes.',
+          'Prioritize rest and recovery when needed.',
+        ],
+        'tip':
+            'This app does not replace pregnancy-specific medical or professional exercise guidance.',
+      },
+      'Gentle Movement': {
+        'section': 'Pregnancy & Postpartum',
+        'intro':
+            'When appropriate and professionally cleared, gentle movement can be adapted to individual comfort.',
+        'focusTitle': 'Movement Focus',
+        'focus':
+            'Choose comfortable, controlled movement rather than pushing intensity.',
+        'actions': [
+          'Use gentle walking when suitable.',
+          'Focus on comfortable mobility.',
+          'Take breaks whenever needed.',
+          'Adjust or stop activity if you feel unwell.',
+        ],
+        'tip':
+            'Suitability depends on individual circumstances, so professional guidance remains important.',
+      },
+      'Postpartum Recovery': {
+        'section': 'Pregnancy & Postpartum',
+        'intro':
+            'Recovery can take time and the return to activity should be gradual and individualized.',
+        'focusTitle': 'Recovery Focus',
+        'focus':
+            'Prioritize healing, rest and a gradual return to movement according to professional guidance.',
+        'actions': [
+          'Avoid rushing back to previous activity levels.',
+          'Start with manageable movement when appropriate.',
+          'Build activity gradually.',
+          'Prioritize sleep and recovery where possible.',
+        ],
+        'tip':
+            'Recovery experiences vary, so compare progress with your own needs rather than a fixed timeline.',
+      },
+      'Listen to Your Body': {
+        'section': 'Pregnancy & Postpartum',
+        'intro':
+            'Comfort, energy and recovery are important signals when choosing daily activity.',
+        'focusTitle': 'Daily Check-In',
+        'focus':
+            'Use your current wellbeing to decide whether to continue, reduce or rest.',
+        'actions': [
+          'Check how you feel before activity.',
+          'Choose a manageable intensity.',
+          'Take breaks without guilt.',
+          'Prioritize rest when needed.',
+        ],
+        'tip':
+            'If you have concerns about symptoms or activity, seek advice from a qualified healthcare professional.',
+      },
+      'Balanced Eating': {
+        'section': 'Hormonal Wellness',
+        'intro':
+            'Support overall wellbeing with varied, balanced eating patterns that fit your lifestyle.',
+        'focusTitle': 'Balanced Routine',
+        'focus':
+            'Avoid extreme restrictions and focus on consistency, variety and practical meals.',
+        'actions': [
+          'Include a variety of whole foods.',
+          'Add protein and fiber where practical.',
+          'Stay hydrated regularly.',
+          'Choose meals that are realistic for your routine.',
+        ],
+        'tip':
+            'There is no single perfect diet for everyone; personal needs can differ.',
+      },
+      'Sleep & Recovery': {
+        'section': 'Hormonal Wellness',
+        'intro':
+            'Regular sleep and recovery habits can support overall wellbeing and sustainable training.',
+        'focusTitle': 'Recovery Routine',
+        'focus':
+            'Create simple routines that help you wind down and recover consistently.',
+        'actions': [
+          'Keep sleep and wake times reasonably consistent.',
+          'Plan rest days when needed.',
+          'Reduce unnecessary training pressure.',
+          'Use relaxing recovery habits you enjoy.',
+        ],
+        'tip':
+            'Focus on improving routines gradually instead of expecting perfection.',
+      },
+      'Daily Wellbeing': {
+        'section': 'Hormonal Wellness',
+        'intro':
+            'Daily wellbeing can help guide practical choices around activity, food and recovery.',
+        'focusTitle': 'Daily Check-In',
+        'focus':
+            'Use your energy and comfort to adapt your routine from day to day.',
+        'actions': [
+          'Check your energy before training.',
+          'Choose manageable activity.',
+          'Build small consistent habits.',
+          'Allow flexibility when your routine changes.',
+        ],
+        'tip':
+            'General wellness information cannot diagnose or treat hormonal conditions.',
+      },
+      'Safety First': {
+        'section': 'Women\'s Safety Mode',
+        'intro':
+            'Plan workouts in ways that help you feel comfortable, aware and prepared.',
+        'focusTitle': 'Safety Checklist',
+        'focus':
+            'Choose practical precautions that match where and how you exercise.',
+        'actions': [
+          'Choose places where you feel comfortable.',
+          'Consider well-lit and familiar routes.',
+          'Share plans with a trusted person when appropriate.',
+          'Keep your phone accessible.',
+        ],
+        'tip':
+            'Trust your judgement. If a situation feels unsafe, prioritize getting to a safer place and seeking help.',
+      },
+      'Workout Location': {
+        'section': 'Women\'s Safety Mode',
+        'intro':
+            'Your environment can affect how comfortable and aware you feel during activity.',
+        'focusTitle': 'Location Check',
+        'focus':
+            'Choose settings that are appropriate for your activity and where help is accessible if needed.',
+        'actions': [
+          'Prefer familiar places when possible.',
+          'Consider lighting and surroundings.',
+          'Know how to leave the area safely.',
+          'Adjust your plan if conditions change.',
+        ],
+        'tip':
+            'A workout can always be changed, moved or stopped if the environment no longer feels comfortable.',
+      },
+      'Emergency Contact': {
+        'section': 'Women\'s Safety Mode',
+        'intro':
+            'Keep important contacts easy to reach when exercising away from home.',
+        'focusTitle': 'Preparedness',
+        'focus':
+            'Make it easy to contact someone you trust if you need support.',
+        'actions': [
+          'Keep a trusted contact easy to access.',
+          'Carry a charged phone when practical.',
+          'Know relevant local emergency options.',
+          'Tell someone your general plans when appropriate.',
+        ],
+        'tip':
+            'Use emergency services or seek immediate help when you face an urgent situation.',
+      },
+      'Awareness': {
+        'section': 'Women\'s Safety Mode',
+        'intro':
+            'Staying aware of your surroundings is an important part of exercising safely.',
+        'focusTitle': 'Awareness Focus',
+        'focus':
+            'Use technology and entertainment in ways that do not unnecessarily reduce your awareness.',
+        'actions': [
+          'Stay attentive to your surroundings.',
+          'Avoid distractions that make you less aware.',
+          'Notice changes in the environment.',
+          'Trust your instincts if something feels wrong.',
+        ],
+        'tip':
+            'Pause or stop the activity if you no longer feel comfortable or safe.',
+      },
+    };
+
+    if (title == 'Movement' && subtitle.contains('regular, sustainable')) {
+      return {
+        'section': 'Hormonal Wellness',
+        'intro':
+            'Choose regular movement that fits your energy, experience level and daily routine.',
+        'focusTitle': 'Movement Focus',
+        'focus':
+            'Sustainable activity is more important than forcing a routine that is difficult to maintain.',
+        'actions': [
+          'Choose activities you enjoy.',
+          'Start with manageable sessions.',
+          'Build consistency gradually.',
+          'Include recovery when needed.',
+        ],
+        'tip': 'Adjust activity according to your daily wellbeing and comfort.',
+      };
+    }
+
+    return data[title] ??
+        {
+          'section': 'Women\'s Wellness',
+          'intro': subtitle,
+          'focusTitle': 'Your Wellness Focus',
+          'focus': subtitle,
+          'actions': [
+            'Choose a comfortable pace.',
+            'Build sustainable habits.',
+            'Adjust according to your wellbeing.',
+            'Seek professional guidance when appropriate.',
+          ],
+          'tip':
+              'Use this information as general wellness guidance and personalize it to your needs.',
+        };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final data = _getContent();
+    final actions = List<String>.from(data['actions']);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          data['section'],
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, size: 42, color: colorScheme.primary),
+                  const SizedBox(height: 14),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    data['intro'],
+                    style: const TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            _RichWellnessSection(
+              icon: Icons.track_changes_outlined,
+              title: data['focusTitle'],
+              text: data['focus'],
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Suggested guidance',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ...actions.map(
+              (action) => _WellnessActionTile(
+                text: action,
+                icon: Icons.check_circle_outline,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _RichWellnessSection(
+              icon: Icons.auto_awesome_outlined,
+              title: 'Personalization Tip',
+              text: data['tip'],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'FitAI provides general wellness information. It is not a substitute for personal medical diagnosis, treatment or professional healthcare advice.',
+                      style: TextStyle(fontSize: 12, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RichWellnessSection extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+
+  const _RichWellnessSection({
+    required this.icon,
+    required this.title,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(text, style: const TextStyle(fontSize: 13, height: 1.5)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WellnessActionTile extends StatelessWidget {
+  final String text;
+  final IconData icon;
+
+  const _WellnessActionTile({required this.text, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WellnessInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+
+  const _WellnessInfoCard({
+    required this.icon,
+    required this.title,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => _WomenInfoDetailScreen(
+                  title: title,
+                  subtitle: text,
+                  icon: icon,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: colorScheme.primary, size: 28),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        text,
+                        style: const TextStyle(fontSize: 13, height: 1.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WellnessNote extends StatelessWidget {
+  final String text;
+
+  const _WellnessNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 12, height: 1.5)),
+    );
+  }
+}
+
+class ExerciseHowToScreen extends StatelessWidget {
+  final String exerciseName;
+  final Map<String, dynamic> details;
+
+  const ExerciseHowToScreen({
+    super.key,
+    required this.exerciseName,
+    required this.details,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final steps = List<String>.from(details['steps'] ?? const <String>[]);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          exerciseName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.fitness_center,
+                    size: 38,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    exerciseName,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'How to do this exercise',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            const SizedBox(height: 28),
+
+            const Text(
+              'Steps',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 12),
+
+            ...steps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: Text(
+                            step,
+                            style: const TextStyle(fontSize: 15, height: 1.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            if (details['tip'] != null) ...[
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        details['tip'].toString(),
+                        style: const TextStyle(fontSize: 13, height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Use comfortable movement and focus on controlled '
+                      'technique. Stop if an exercise causes pain or feels unsafe.',
+                      style: TextStyle(fontSize: 12, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CycleAwareFitnessScreen extends StatefulWidget {
+  const CycleAwareFitnessScreen({super.key});
+
+  @override
+  State<CycleAwareFitnessScreen> createState() =>
+      _CycleAwareFitnessScreenState();
+}
+
+class _CycleAwareFitnessScreenState extends State<CycleAwareFitnessScreen> {
+  String selectedPhase = 'Menstrual';
+
+  final Map<String, Map<String, dynamic>> phaseGuidance = {
+    'Menstrual': {
+      'intensity': 'Low to moderate',
+      'focus': 'Recovery, mobility and comfortable movement',
+      'tip':
+          'Choose comfortable movement and adjust intensity according to how you feel.',
+      'workouts': [
+        'Gentle Walking',
+        'Mobility & Stretching',
+        'Light Bodyweight Workout',
+      ],
+    },
+    'Follicular': {
+      'intensity': 'Moderate to high',
+      'focus': 'Strength, cardio and skill-building',
+      'tip':
+          'If your energy feels good, gradually increase training intensity.',
+      'workouts': ['Strength Training', 'Moderate Cardio', 'Full-Body Workout'],
+    },
+    'Ovulatory': {
+      'intensity': 'Moderate to high',
+      'focus': 'Strength, cardio and performance',
+      'tip': 'Prioritize good technique, controlled movement and recovery.',
+      'workouts': [
+        'Strength Workout',
+        'Cardio Intervals',
+        'Full-Body Training',
+      ],
+    },
+    'Luteal': {
+      'intensity': 'Moderate',
+      'focus': 'Steady training, strength and recovery',
+      'tip': 'Adjust workout intensity based on your energy and comfort.',
+      'workouts': [
+        'Moderate Strength Workout',
+        'Steady-State Cardio',
+        'Mobility & Recovery',
+      ],
+    },
+  };
+
+  final Map<String, List<String>> workoutExercises = {
+    'Gentle Walking': [
+      'Easy Walking',
+      'Heel-to-Toe Walking',
+      'Slow Walking Cooldown',
+    ],
+    'Mobility & Stretching': [
+      'Neck Mobility',
+      'Shoulder Rolls',
+      'Hip Circles',
+      'Ankle Circles',
+      'Gentle Full-Body Stretch',
+    ],
+    'Light Bodyweight Workout': [
+      'Supported Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Standing March',
+    ],
+    'Strength Training': [
+      'Bodyweight Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Bird Dog',
+    ],
+    'Moderate Cardio': ['Brisk Walking', 'Marching in Place', 'Step Touch'],
+    'Full-Body Workout': [
+      'Bodyweight Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Bird Dog',
+    ],
+    'Strength Workout': [
+      'Bodyweight Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Bird Dog',
+    ],
+    'Cardio Intervals': ['Marching in Place', 'Step Touch', 'Brisk Walking'],
+    'Full-Body Training': [
+      'Bodyweight Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Bird Dog',
+    ],
+    'Moderate Strength Workout': [
+      'Bodyweight Squat',
+      'Wall Push-Up',
+      'Glute Bridge',
+      'Bird Dog',
+    ],
+    'Steady-State Cardio': ['Brisk Walking', 'Marching in Place', 'Step Touch'],
+    'Mobility & Recovery': [
+      'Shoulder Rolls',
+      'Hip Circles',
+      'Ankle Circles',
+      'Gentle Full-Body Stretch',
+    ],
+  };
+  final Map<String, Map<String, dynamic>> exerciseDetails = {
+    'Supported Squat': {
+      'howTo': [
+        'Stand with your feet about shoulder-width apart.',
+        'Keep your chest comfortable and your back neutral.',
+        'Bend your knees and hips slowly while staying balanced.',
+        'Push through your feet to return to the starting position.',
+      ],
+      'focus': 'Lower-body strength and controlled movement',
+    },
+    'Wall Push-Up': {
+      'howTo': [
+        'Stand facing a wall and place your hands on it.',
+        'Keep your body in a comfortable straight position.',
+        'Bend your elbows and slowly move toward the wall.',
+        'Push gently away from the wall to return to the start.',
+      ],
+      'focus': 'Upper-body strength and controlled movement',
+    },
+    'Glute Bridge': {
+      'howTo': [
+        'Lie comfortably on your back with your knees bent.',
+        'Keep your feet supported on the floor.',
+        'Lift your hips slowly while keeping the movement controlled.',
+        'Lower your hips gently and repeat at a comfortable pace.',
+      ],
+      'focus': 'Glute and lower-body strength',
+    },
+    'Gentle Walking': {
+      'howTo': [
+        'Start at an easy, comfortable walking pace.',
+        'Keep your posture relaxed while walking.',
+        'Maintain a pace that feels manageable.',
+        'Slow down gradually before finishing.',
+      ],
+      'focus': 'Light movement and recovery',
+    },
+    'Mobility & Stretching': {
+      'howTo': [
+        'Begin with gentle shoulder and neck movements.',
+        'Move through comfortable hip and ankle mobility.',
+        'Add gentle full-body stretches.',
+        'Never force a stretch or movement.',
+      ],
+      'focus': 'Mobility and comfortable movement',
+    },
+  };
+  final Map<String, Map<String, dynamic>> workoutDetails = {
+    'Gentle Walking': {
+      'duration': '10–20 min',
+      'focus': 'Light movement and recovery',
+      'steps': [
+        'Start with a comfortable walking pace.',
+        'Keep your posture relaxed and shoulders comfortable.',
+        'Walk at an easy pace that feels manageable.',
+        'Slow down gradually before finishing.',
+      ],
+      'tip':
+          'Keep the pace comfortable. Stop or reduce intensity if you feel unwell or uncomfortable.',
+    },
+    'Mobility & Stretching': {
+      'duration': '10–15 min',
+      'focus': 'Mobility and comfortable movement',
+      'steps': [
+        'Begin with gentle shoulder and neck movements.',
+        'Move through comfortable hip and ankle mobility.',
+        'Add gentle full-body stretches without forcing the range.',
+        'Breathe normally and finish with a short relaxation period.',
+      ],
+      'tip':
+          'Movements should feel comfortable. Do not force a stretch or movement.',
+    },
+    'Light Bodyweight Workout': {
+      'duration': '10–15 min',
+      'focus': 'Light full-body movement',
+      'steps': [
+        'Start with a gentle warm-up.',
+        'Perform comfortable bodyweight movements such as supported squats.',
+        'Add simple upper-body movements at an easy pace.',
+        'Take breaks whenever needed.',
+      ],
+      'tip':
+          'Choose easy variations and focus on comfortable movement rather than intensity.',
+    },
+    'Strength Training': {
+      'duration': '25–35 min',
+      'focus': 'Basic strength development',
+      'steps': [
+        'Begin with a short warm-up.',
+        'Choose manageable resistance and focus on technique.',
+        'Perform controlled repetitions with comfortable range of motion.',
+        'Rest between exercises and finish with light recovery movement.',
+      ],
+      'tip':
+          'Use manageable resistance and prioritize safe technique over heavier loads.',
+    },
+    'Moderate Cardio': {
+      'duration': '20–30 min',
+      'focus': 'Steady cardiovascular activity',
+      'steps': [
+        'Warm up gradually for a few minutes.',
+        'Choose a comfortable cardio activity such as walking or cycling.',
+        'Maintain a steady, manageable pace.',
+        'Gradually reduce the pace before stopping.',
+      ],
+      'tip':
+          'Keep the intensity manageable and adjust the pace whenever needed.',
+    },
+    'Full-Body Workout': {
+      'duration': '25–35 min',
+      'focus': 'Balanced full-body training',
+      'steps': [
+        'Start with a gentle warm-up.',
+        'Choose simple lower-body, upper-body and core movements.',
+        'Perform each movement with controlled technique.',
+        'Rest between exercises and finish with recovery movement.',
+      ],
+      'tip':
+          'Use exercise variations that match your experience level and focus on technique.',
+    },
+    'Strength Workout': {
+      'duration': '25–35 min',
+      'focus': 'Strength and controlled performance',
+      'steps': [
+        'Warm up before beginning resistance exercises.',
+        'Choose manageable resistance for each exercise.',
+        'Perform controlled repetitions with good technique.',
+        'Rest between sets and cool down gradually.',
+      ],
+      'tip':
+          'Do not sacrifice technique to increase resistance or repetitions.',
+    },
+    'Cardio Intervals': {
+      'duration': '15–25 min',
+      'focus': 'Cardiovascular fitness',
+      'steps': [
+        'Begin with a gradual warm-up.',
+        'Alternate a comfortable faster period with an easier recovery period.',
+        'Keep the harder periods manageable rather than maximal.',
+        'Finish with several minutes of easy movement.',
+      ],
+      'tip':
+          'Intervals should remain manageable. Reduce intensity if you feel uncomfortable.',
+    },
+    'Full-Body Training': {
+      'duration': '25–35 min',
+      'focus': 'Balanced strength and movement',
+      'steps': [
+        'Warm up the major muscle groups.',
+        'Perform simple full-body exercises with controlled movement.',
+        'Rest as needed between exercises.',
+        'Finish with gentle cooldown movements.',
+      ],
+      'tip':
+          'Prioritize controlled technique and comfortable movement throughout the session.',
+    },
+    'Moderate Strength Workout': {
+      'duration': '20–30 min',
+      'focus': 'Steady strength training',
+      'steps': [
+        'Start with a gentle warm-up.',
+        'Choose manageable resistance.',
+        'Perform controlled repetitions and take regular rests.',
+        'Finish with gentle mobility or cooldown movement.',
+      ],
+      'tip':
+          'Adjust resistance and rest periods according to your energy and comfort.',
+    },
+    'Steady-State Cardio': {
+      'duration': '20–30 min',
+      'focus': 'Steady cardiovascular activity',
+      'steps': [
+        'Warm up gradually.',
+        'Choose a comfortable activity such as walking or cycling.',
+        'Maintain a steady pace that you can comfortably sustain.',
+        'Slow down gradually at the end.',
+      ],
+      'tip':
+          'Keep the pace comfortable and adjust it whenever your energy changes.',
+    },
+    'Mobility & Recovery': {
+      'duration': '10–20 min',
+      'focus': 'Mobility and recovery',
+      'steps': [
+        'Begin with slow, comfortable movements.',
+        'Move through gentle shoulder, hip and ankle mobility.',
+        'Add relaxed stretching without forcing the range.',
+        'Finish with slow breathing and easy movement.',
+      ],
+      'tip':
+          'Recovery sessions should feel comfortable and should not be painful.',
+    },
+  };
+
+  void _openExercise(String exerciseName) {
+    final details = exerciseDetails[exerciseName];
+
+    if (details == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ExerciseHowToScreen(exerciseName: exerciseName, details: details),
+      ),
+    );
+  }
+
+  void _openWorkout(String workoutName) {
+    final details = workoutDetails[workoutName];
+
+    if (details == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutDetailsScreen(
+          workoutName: workoutName,
+          duration: details['duration'] as String,
+          focus: details['focus'] as String,
+          steps: List<String>.from(details['steps'] as List),
+          tip: details['tip'] as String,
+          phase: selectedPhase,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final guidance = phaseGuidance[selectedPhase]!;
+    final workouts = guidance['workouts'] as List<String>;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Cycle-Aware Fitness',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.20),
+                ),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.calendar_month_outlined, size: 34),
+                  SizedBox(height: 12),
+                  Text(
+                    'Fitness that adapts to you',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Select a cycle phase to see general workout '
+                    'and recovery guidance.',
+                    style: TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            const Text(
+              'Current cycle phase',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 12),
+
+            DropdownButtonFormField<String>(
+              initialValue: selectedPhase,
+              decoration: InputDecoration(
+                labelText: 'Select phase',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                prefixIcon: const Icon(Icons.calendar_today_outlined),
+              ),
+              items: phaseGuidance.keys.map((phase) {
+                return DropdownMenuItem<String>(
+                  value: phase,
+                  child: Text(phase),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+
+                setState(() {
+                  selectedPhase = value;
+                });
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectedPhase,
+                    style: const TextStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Suggested intensity',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    guidance['intensity'] as String,
+                    style: const TextStyle(height: 1.4),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  const Text(
+                    'Fitness focus',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    guidance['focus'] as String,
+                    style: const TextStyle(height: 1.4),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  const Text(
+                    'FitAI tip',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    guidance['tip'] as String,
+                    style: const TextStyle(height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            const Text(
+              'Suggested workouts',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Tap a workout to learn how to do it.',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            ),
+
+            const SizedBox(height: 14),
+
+            ...workouts.asMap().entries.map((entry) {
+              final index = entry.key;
+              final workout = entry.value;
+
+              final exerciseMap = <String, List<String>>{
+                'Gentle Walking': [
+                  'Comfortable Walking',
+                  'Heel-to-Toe Walk',
+                  'Easy March',
+                ],
+                'Mobility & Stretching': [
+                  'Neck Mobility',
+                  'Shoulder Rolls',
+                  'Hip Mobility',
+                  'Ankle Circles',
+                ],
+                'Light Bodyweight Workout': [
+                  'Supported Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Strength Training': [
+                  'Bodyweight Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Moderate Cardio': [
+                  'Brisk Walking',
+                  'March in Place',
+                  'Low-Impact Step',
+                ],
+                'Full-Body Workout': [
+                  'Bodyweight Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Strength Workout': [
+                  'Bodyweight Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Cardio Intervals': [
+                  'March in Place',
+                  'Step Touch',
+                  'Easy Recovery Walk',
+                ],
+                'Full-Body Training': [
+                  'Bodyweight Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Moderate Strength Workout': [
+                  'Bodyweight Squat',
+                  'Wall Push-Up',
+                  'Glute Bridge',
+                ],
+                'Steady-State Cardio': [
+                  'Comfortable Walking',
+                  'March in Place',
+                  'Easy Cycling',
+                ],
+                'Mobility & Recovery': [
+                  'Shoulder Rolls',
+                  'Hip Mobility',
+                  'Ankle Circles',
+                  'Gentle Stretching',
+                ],
+              };
+
+              final exercises =
+                  exerciseMap[workout] ??
+                  ['Bodyweight Squat', 'Wall Push-Up', 'Glute Bridge'];
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            _openWorkout(workout);
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  workout,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 17,
+                                color: colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        const Text(
+                          'Recommended exercises',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        ...exercises.map(
+                          (exercise) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                _openExercise(exercise);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 9,
+                                  horizontal: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.fitness_center,
+                                      size: 18,
+                                      color: colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        exercise,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Watch exercise video',
+                                      icon: Icon(
+                                        Icons.play_circle_outline,
+                                        size: 20,
+                                        color: colorScheme.primary,
+                                      ),
+                                      onPressed: () async {
+                                        final query = Uri.encodeComponent(
+                                          "$exercise exercise tutorial",
+                                        );
+
+                                        final uri = Uri.parse(
+                                          "https://www.youtube.com/results?search_query=$query",
+                                        );
+
+                                        await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Cycle experiences vary from person to person. '
+                      'Use these suggestions as general wellness guidance '
+                      'and adjust activity according to your comfort.',
+                      style: TextStyle(fontSize: 12, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WorkoutDetailsScreen extends StatelessWidget {
+  final String workoutName;
+  final String duration;
+  final String focus;
+  final List<String> steps;
+  final String tip;
+  final String phase;
+
+  const WorkoutDetailsScreen({
+    super.key,
+    required this.workoutName,
+    required this.duration,
+    required this.focus,
+    required this.steps,
+    required this.tip,
+    required this.phase,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'How to Do Workout',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              workoutName,
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Suggested for your $phase phase',
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _WorkoutInfoCard(
+                    icon: Icons.timer_outlined,
+                    title: L.t('duration'),
+                    value: duration,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _WorkoutInfoCard(
+                    icon: Icons.track_changes_outlined,
+                    title: L.t('focus'),
+                    value: focus,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 28),
+
+            Text(
+              L.t('howToDoIt'),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 14),
+
+            ...steps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: Text(
+                          step,
+                          style: const TextStyle(fontSize: 14, height: 1.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+
+            const SizedBox(height: 12),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.16),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.health_and_safety_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FitAI Safety Tip',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          tip,
+                          style: const TextStyle(fontSize: 13, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              'This feature provides general wellness guidance, '
+              'not medical advice.',
+              style: TextStyle(fontSize: 12, height: 1.5),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _WorkoutInfoCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 5),
+          Text(value, style: const TextStyle(fontSize: 13, height: 1.4)),
+        ],
+      ),
+    );
+  }
+}
+
+class WorkoutScreen extends StatefulWidget {
+  const WorkoutScreen({super.key});
+
+  @override
+  State<WorkoutScreen> createState() => _WorkoutScreenState();
+}
+
+class _WorkoutScreenState extends State<WorkoutScreen> {
+  final List<Map<String, dynamic>> exercises = [
+    {'name': 'Bench Press', 'muscle': 'Chest', 'sets': 3, 'reps': 10},
+    {'name': 'Shoulder Press', 'muscle': 'Shoulders', 'sets': 3, 'reps': 10},
+    {'name': 'Lat Pulldown', 'muscle': 'Back', 'sets': 3, 'reps': 12},
+    {'name': 'Bicep Curls', 'muscle': 'Biceps', 'sets': 3, 'reps': 12},
+    {'name': 'Tricep Pushdown', 'muscle': 'Triceps', 'sets': 3, 'reps': 12},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    loadCustomExercises();
+  }
+
+  Future<void> loadCustomExercises() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedExercises = prefs.getStringList('custom_exercises');
+
+    if (savedExercises == null) return;
+
+    if (!mounted) return;
+
+    setState(() {
+      for (final item in savedExercises) {
+        final parts = item.split('|');
+
+        if (parts.length == 4) {
+          exercises.add({
+            'name': parts[0],
+            'muscle': parts[1],
+            'sets': int.tryParse(parts[2]) ?? 3,
+            'reps': int.tryParse(parts[3]) ?? 10,
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            L.t('yourWorkout'),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            L.t('workoutSubtitle'),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+          ),
+
+          const SizedBox(height: 24),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurpleAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.deepPurpleAccent,
+                        size: 28,
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            L.t('todaysWorkout'),
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Upper Body • 45 min',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _WorkoutStat(
+                        value: '${exercises.length}',
+                        label: L.t('exercises'),
+                      ),
+                    ),
+                    Expanded(
+                      child: _WorkoutStat(value: '3', label: L.t('sets')),
+                    ),
+                    Expanded(
+                      child: _WorkoutStat(value: '45', label: L.t('minutes')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          Text(
+            L.t('exercises'),
+            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 15),
+
+          ...exercises.map(
+            (exercise) => _ExerciseTile(
+              icon: Icons.fitness_center,
+              name: exercise['name'],
+              details:
+                  '${exercise['sets']} ${L.t("sets")} \u00d7 '
+                  '${exercise['reps']} ${L.t("reps")}',
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ActiveWorkoutScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: Text(
+                L.t('startWorkout'),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 6,
+          ),
+          leading: Icon(icon, color: Colors.deepPurpleAccent),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(subtitle),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutStat extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _WorkoutStat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(

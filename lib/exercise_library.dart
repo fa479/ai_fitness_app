@@ -11,6 +11,8 @@
 
 library;
 
+import 'core/pose_analyzer.dart' show ExerciseType;
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -28,11 +30,7 @@ enum ExerciseCategory {
   womensWellness,
 }
 
-enum ExerciseDifficulty {
-  beginner,
-  intermediate,
-  advanced,
-}
+enum ExerciseDifficulty { beginner, intermediate, advanced }
 
 class LibraryExercise {
   final String id;
@@ -119,8 +117,7 @@ class LibraryExercise {
       poseExerciseType: json['poseExerciseType'] as String?,
       defaultSets: (json['defaultSets'] as num?)?.toInt() ?? 3,
       defaultReps: (json['defaultReps'] as num?)?.toInt() ?? 10,
-      defaultRestSeconds:
-          (json['defaultRestSeconds'] as num?)?.toInt() ?? 60,
+      defaultRestSeconds: (json['defaultRestSeconds'] as num?)?.toInt() ?? 60,
       instructions: json['instructions'] as String? ?? '',
       womensWellness: json['womensWellness'] as bool? ?? false,
     );
@@ -144,7 +141,6 @@ class ExerciseLibrary {
     // =========================
     // CAMERA SUPPORTED
     // =========================
-
     LibraryExercise(
       id: 'squat',
       name: 'Squat',
@@ -208,8 +204,7 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 10,
       defaultRestSeconds: 60,
-      instructions:
-          'Keep your core stable and press upward without rushing.',
+      instructions: 'Keep your core stable and press upward without rushing.',
       womensWellness: false,
     ),
 
@@ -267,7 +262,6 @@ class ExerciseLibrary {
     // =========================
     // LOWER BODY
     // =========================
-
     LibraryExercise(
       id: 'glute_bridge',
       name: 'Glute Bridge',
@@ -297,8 +291,7 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 15,
       defaultRestSeconds: 45,
-      instructions:
-          'Rise onto the balls of your feet and lower slowly.',
+      instructions: 'Rise onto the balls of your feet and lower slowly.',
       womensWellness: false,
     ),
 
@@ -331,8 +324,7 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 10,
       defaultRestSeconds: 60,
-      instructions:
-          'Step onto a stable platform and return with control.',
+      instructions: 'Step onto a stable platform and return with control.',
       womensWellness: false,
     ),
 
@@ -373,7 +365,6 @@ class ExerciseLibrary {
     // =========================
     // UPPER BODY
     // =========================
-
     LibraryExercise(
       id: 'tricep_dip',
       name: 'Tricep Dip',
@@ -394,7 +385,8 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'incline_pushup',
       name: 'Incline Push-up',
-      description: 'Beginner-friendly push-up variation using an elevated surface.',
+      description:
+          'Beginner-friendly push-up variation using an elevated surface.',
       muscleGroup: 'Chest & Triceps',
       category: ExerciseCategory.upperBody,
       difficulty: ExerciseDifficulty.beginner,
@@ -437,8 +429,7 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 12,
       defaultRestSeconds: 45,
-      instructions:
-          'Raise your arms to a comfortable height without swinging.',
+      instructions: 'Raise your arms to a comfortable height without swinging.',
       womensWellness: false,
     ),
 
@@ -471,15 +462,13 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 12,
       defaultRestSeconds: 60,
-      instructions:
-          'Keep your back comfortable and pull your elbows backward.',
+      instructions: 'Keep your back comfortable and pull your elbows backward.',
       womensWellness: false,
     ),
 
     // =========================
     // CORE
     // =========================
-
     LibraryExercise(
       id: 'dead_bug',
       name: 'Dead Bug',
@@ -526,8 +515,7 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 20,
       defaultRestSeconds: 45,
-      instructions:
-          'Maintain a stable upper body while alternating your legs.',
+      instructions: 'Maintain a stable upper body while alternating your legs.',
       womensWellness: false,
     ),
 
@@ -543,15 +531,13 @@ class ExerciseLibrary {
       defaultSets: 3,
       defaultReps: 12,
       defaultRestSeconds: 45,
-      instructions:
-          'Move slowly and focus on controlled core engagement.',
+      instructions: 'Move slowly and focus on controlled core engagement.',
       womensWellness: false,
     ),
 
     // =========================
     // CARDIO / FULL BODY
     // =========================
-
     LibraryExercise(
       id: 'high_knees',
       name: 'High Knees',
@@ -623,7 +609,6 @@ class ExerciseLibrary {
     // =========================
     // MOBILITY / FLEXIBILITY
     // =========================
-
     LibraryExercise(
       id: 'cat_cow',
       name: 'Cat-Cow',
@@ -636,8 +621,7 @@ class ExerciseLibrary {
       defaultSets: 2,
       defaultReps: 10,
       defaultRestSeconds: 30,
-      instructions:
-          'Move slowly between the two comfortable spinal positions.',
+      instructions: 'Move slowly between the two comfortable spinal positions.',
       womensWellness: false,
     ),
 
@@ -670,8 +654,7 @@ class ExerciseLibrary {
       defaultSets: 2,
       defaultReps: 10,
       defaultRestSeconds: 30,
-      instructions:
-          'Move the shoulders slowly through a comfortable range.',
+      instructions: 'Move the shoulders slowly through a comfortable range.',
       womensWellness: false,
     ),
   ];
@@ -756,8 +739,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_dead_bug',
       name: 'Women’s Wellness Dead Bug',
-      description:
-          'Gentle controlled core stability exercise.',
+      description: 'Gentle controlled core stability exercise.',
       muscleGroup: 'Core',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -774,8 +756,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_cat_cow',
       name: 'Women’s Wellness Cat-Cow',
-      description:
-          'Gentle spinal mobility movement.',
+      description: 'Gentle spinal mobility movement.',
       muscleGroup: 'Back & Core',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -792,8 +773,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_hip_mobility',
       name: 'Women’s Wellness Hip Mobility',
-      description:
-          'Gentle hip mobility routine.',
+      description: 'Gentle hip mobility routine.',
       muscleGroup: 'Hips',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -810,8 +790,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_wall_sit',
       name: 'Women’s Wellness Wall Sit',
-      description:
-          'Controlled lower-body isometric exercise.',
+      description: 'Controlled lower-body isometric exercise.',
       muscleGroup: 'Quads & Glutes',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -828,8 +807,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_march',
       name: 'Women’s Wellness March',
-      description:
-          'Low-impact movement suitable for gentle activity sessions.',
+      description: 'Low-impact movement suitable for gentle activity sessions.',
       muscleGroup: 'Full Body',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -846,8 +824,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_shoulder_mobility',
       name: 'Women’s Wellness Shoulder Mobility',
-      description:
-          'Gentle shoulder mobility movement.',
+      description: 'Gentle shoulder mobility movement.',
       muscleGroup: 'Shoulders',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -864,8 +841,7 @@ class ExerciseLibrary {
     LibraryExercise(
       id: 'ww_calf_raise',
       name: 'Women’s Wellness Calf Raise',
-      description:
-          'Simple lower-leg strengthening movement.',
+      description: 'Simple lower-leg strengthening movement.',
       muscleGroup: 'Calves',
       category: ExerciseCategory.womensWellness,
       difficulty: ExerciseDifficulty.beginner,
@@ -874,8 +850,7 @@ class ExerciseLibrary {
       defaultSets: 2,
       defaultReps: 12,
       defaultRestSeconds: 45,
-      instructions:
-          'Rise and lower slowly while maintaining balance.',
+      instructions: 'Rise and lower slowly while maintaining balance.',
       womensWellness: true,
     ),
 
@@ -892,8 +867,7 @@ class ExerciseLibrary {
       defaultSets: 2,
       defaultReps: 8,
       defaultRestSeconds: 60,
-      instructions:
-          'Use a stable elevated surface and keep your body aligned.',
+      instructions: 'Use a stable elevated surface and keep your body aligned.',
       womensWellness: true,
     ),
   ];
@@ -903,10 +877,7 @@ class ExerciseLibrary {
   // --------------------------------------------------------------------------
 
   List<LibraryExercise> get allExercises {
-    return [
-      ...generalExercises,
-      ...womensWellnessExercises,
-    ];
+    return [...generalExercises, ...womensWellnessExercises];
   }
 
   List<LibraryExercise> get generalOnly {
@@ -974,9 +945,7 @@ class ExerciseLibrary {
   }
 
   List<LibraryExercise> cameraSupportedExercises() {
-    return allExercises
-        .where((exercise) => exercise.cameraSupported)
-        .toList();
+    return allExercises.where((exercise) => exercise.cameraSupported).toList();
   }
 
   // --------------------------------------------------------------------------
@@ -1000,10 +969,7 @@ class ExerciseLibrary {
 
   List<LibraryExercise> beginnerExercises() {
     return allExercises
-        .where(
-          (exercise) =>
-              exercise.difficulty == ExerciseDifficulty.beginner,
-        )
+        .where((exercise) => exercise.difficulty == ExerciseDifficulty.beginner)
         .toList();
   }
 
@@ -1014,8 +980,7 @@ class ExerciseLibrary {
   List<LibraryExercise> exercisesForGoal(String goal) {
     final normalized = goal.toLowerCase();
 
-    if (normalized.contains('strength') ||
-        normalized.contains('muscle')) {
+    if (normalized.contains('strength') || normalized.contains('muscle')) {
       return allExercises.where((exercise) {
         return exercise.category == ExerciseCategory.strength ||
             exercise.category == ExerciseCategory.upperBody ||
@@ -1033,8 +998,7 @@ class ExerciseLibrary {
       }).toList();
     }
 
-    if (normalized.contains('mobility') ||
-        normalized.contains('flexibility')) {
+    if (normalized.contains('mobility') || normalized.contains('flexibility')) {
       return allExercises.where((exercise) {
         return exercise.category == ExerciseCategory.mobility ||
             exercise.category == ExerciseCategory.flexibility;
@@ -1043,7 +1007,93 @@ class ExerciseLibrary {
 
     return allExercises;
   }
+
+  /// Centralized camera exercise registry.
+  ///
+  /// Given any exercise name (e.g. "Supported Squat", "Wall Push-Up"),
+  /// returns the matching camera-supported [LibraryExercise], or null if
+  /// no camera implementation exists for that exercise.
+  static LibraryExercise? findCameraExercise(String name) {
+    final normalized = name.trim().toLowerCase();
+    final stripped = normalized
+        .replaceAll(RegExp(r'^bodyweight\s+'), '')
+        .replaceAll(RegExp(r'^dumbbell\s+'), '')
+        .replaceAll(RegExp(r'^barbell\s+'), '')
+        .replaceAll(RegExp(r'^kettlebell\s+'), '')
+        .replaceAll(RegExp(r'^supported\s+'), '')
+        .replaceAll(RegExp(r'^wall\s+'), '')
+        .replaceAll(RegExp(r'^easy\s+'), '')
+        .replaceAll(RegExp(r'^gentle\s+'), '')
+        .replaceAll(RegExp(r'^light\s+'), '')
+        .trim();
+
+    for (final exercise in instance.allExercises) {
+      if (!exercise.cameraSupported) continue;
+      if (exercise.name.toLowerCase() == normalized) return exercise;
+    }
+
+    for (final exercise in instance.allExercises) {
+      if (!exercise.cameraSupported) continue;
+      if (exercise.name.toLowerCase() == stripped) return exercise;
+    }
+
+    for (final exercise in instance.allExercises) {
+      if (!exercise.cameraSupported) continue;
+      final libName = exercise.name.toLowerCase();
+      final libSingular = libName.replaceAll(RegExp(r's$'), '');
+      final strippedSingular = stripped.replaceAll(RegExp(r's$'), '');
+      if (libSingular == strippedSingular) return exercise;
+    }
+
+    for (final exercise in instance.allExercises) {
+      if (!exercise.cameraSupported) continue;
+      final libName = exercise.name.toLowerCase();
+      if (libName.contains(stripped) || stripped.contains(libName)) {
+        return exercise;
+      }
+    }
+
+    const keywords = <String, String>{
+      'squat': 'squat',
+      'squats': 'squat',
+      'push': 'pushup',
+      'pushup': 'pushup',
+      'push-up': 'pushup',
+      'push-ups': 'pushup',
+      'curl': 'bicepCurl',
+      'bicep': 'bicepCurl',
+      'press': 'shoulderPress',
+      'shoulder': 'shoulderPress',
+      'lunge': 'lunge',
+      'lunges': 'lunge',
+      'jack': 'jumpingJack',
+      'jumping': 'jumpingJack',
+      'plank': 'plank',
+    };
+
+    for (final entry in keywords.entries) {
+      if (stripped.contains(entry.key) || normalized.contains(entry.key)) {
+        for (final exercise in instance.allExercises) {
+          if (exercise.cameraSupported &&
+              exercise.poseExerciseType == entry.value) {
+            return exercise;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// Returns the [ExerciseType] for a camera-supported exercise name, or null.
+  static ExerciseType? cameraExerciseType(String name) {
+    return findCameraExercise(name)?.poseExerciseType != null
+        ? ExerciseType.values.firstWhere(
+            (t) => t.name == findCameraExercise(name)!.poseExerciseType,
+            orElse: () => ExerciseType.generic,
+          )
+        : null;
+  }
 }
 
 final exerciseLibrary = ExerciseLibrary.instance;
-

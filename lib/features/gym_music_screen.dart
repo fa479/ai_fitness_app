@@ -57,9 +57,7 @@ class _GymMusicScreenState extends State<GymMusicScreen> {
 
   Future<void> _addPhoneAudio() async {
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.audio,
-      );
+      final result = await FilePicker.pickFiles(type: FileType.audio);
 
       if (result.isEmpty) {
         return;
@@ -71,9 +69,9 @@ class _GymMusicScreenState extends State<GymMusicScreen> {
 
       if (filePath == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(L.t('fileSelectionFailed'))),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(L.t('fileSelectionFailed'))));
         }
         return;
       }
@@ -113,19 +111,19 @@ class _GymMusicScreenState extends State<GymMusicScreen> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(L.t('couldNotOpenLink'))),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(L.t('couldNotOpenLink'))));
         }
       }
     } else if (item.sourceType == MusicSourceType.phoneAudio) {
       try {
         // Stop any currently playing audio
         await _audioPlayer.stop();
-        
+
         // Play the local audio file
         await _audioPlayer.play(DeviceFileSource(item.url));
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -228,25 +226,16 @@ class _GymMusicScreenState extends State<GymMusicScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.music_off,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.music_off, size: 80, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               L.t('noMusicYet'),
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             Text(
               L.t('addMusicToLibrary'),
-              style: TextStyle(
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -278,11 +267,7 @@ class _GymMusicScreenState extends State<GymMusicScreen> {
             color: Colors.white,
           ),
         ),
-        title: Text(
-          item.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
           item.sourceType == MusicSourceType.youtube
               ? L.t('youtube')

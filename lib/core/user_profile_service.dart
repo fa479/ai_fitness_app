@@ -7,6 +7,7 @@
 /// product documents (activity level, equipment, experience, etc.).
 library;
 
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Activity level, used by calorie/target calculations and the AI coach.
@@ -32,6 +33,51 @@ enum ActivityLevel {
 /// Gender, used by BMR calculation.
 enum Gender { male, female, other }
 
+/// Health conditions a user can optionally select.
+enum HealthCondition {
+  none,
+  diabetes,
+  cardiovascular,
+  highBP,
+  jointMobility,
+  respiratory,
+  cancer,
+  recentSurgery,
+  pregnancyPostpartum,
+  other;
+
+  bool get isHighRisk =>
+      this == cardiovascular ||
+      this == highBP ||
+      this == recentSurgery ||
+      this == cancer;
+
+  static HealthCondition fromName(String? n) {
+    for (final v in values) {
+      if (v.name == n) return v;
+    }
+    return HealthCondition.none;
+  }
+}
+
+/// Age group for age-aware personalization.
+enum AgeGroup {
+  child,
+  teen,
+  adult,
+  older;
+
+  static AgeGroup fromAge(int? age) {
+    if (age == null) return AgeGroup.adult;
+    if (age < 13) return AgeGroup.child;
+    if (age < 18) return AgeGroup.teen;
+    if (age >= 60) return AgeGroup.older;
+    return AgeGroup.adult;
+  }
+
+  bool get isMinor => this == child || this == teen;
+}
+
 /// A snapshot of the user's profile used to personalize AI output.
 class UserProfile {
   final String name;
@@ -46,6 +92,10 @@ class UserProfile {
   final String minutesPerSession;
   final String dietaryPreference;
   final String language;
+  final String genderName;
+  final List<String> healthConditionNames;
+  final String workoutLocation;
+  final List<String> preferredDays;
 
   const UserProfile({
     this.name = '',
@@ -60,6 +110,10 @@ class UserProfile {
     this.minutesPerSession = '45',
     this.dietaryPreference = 'No preference',
     this.language = 'English',
+    this.genderName = 'male',
+    this.healthConditionNames = const <String>[],
+    this.workoutLocation = 'Home',
+    this.preferredDays = const <String>[],
   });
 
   bool get isComplete =>
@@ -72,6 +126,18 @@ class UserProfile {
   double? get heightCm => double.tryParse(height);
   double? get weightKg => double.tryParse(weight);
   ActivityLevel get activity => ActivityLevel.fromName(activityLevelName);
+  Gender get gender {
+    for (final v in Gender.values) {
+      if (v.name == genderName) return v;
+    }
+    return Gender.male;
+  }
+
+  List<HealthCondition> get healthConditions =>
+      healthConditionNames.map(HealthCondition.fromName).toList();
+
+  bool get hasHighRiskCondition => healthConditions.any((c) => c.isHighRisk);
+  AgeGroup get ageGroup => AgeGroup.fromAge(ageInt);
 
   /// Body Mass Index, or null when height/weight are missing.
   double? get bmi {
@@ -82,14 +148,19 @@ class UserProfile {
     return w / (m * m);
   }
 
-  /// Basal Metabolic Rate (Mifflin–St Jeor). Male formula used as default.
+  /// Basal Metabolic Rate (Mifflin–St Jeor), gender-aware.
   double? get bmr {
     final a = ageInt;
     final h = heightCm;
     final w = weightKg;
     if (a == null || h == null || w == null) return null;
-    // Default to male; a gender field can refine this later.
-    return 10 * w + 6.25 * h - 5 * a + 5;
+    final g = gender;
+    final constant = g == Gender.female
+        ? -161.0
+        : g == Gender.other
+            ? -78.0
+            : 5.0;
+    return 10 * w + 6.25 * h - 5 * a + constant;
   }
 
   /// Total daily energy expenditure, used as the calorie target baseline.
@@ -104,14 +175,23 @@ class UserProfile {
     final parts = <String>[];
     if (name.isNotEmpty) parts.add('Name: $name');
     if (ageInt != null) parts.add('Age: $age');
+    parts.add('Age group: ${ageGroup.name}');
+    parts.add('Gender: ${gender.name}');
     if (heightCm != null) parts.add('Height: $height cm');
     if (weightKg != null) parts.add('Weight: $weight kg');
     parts.add('Goal: $goal');
     parts.add('Activity: ${activity.label}');
     parts.add('Experience: $experience');
     parts.add('Equipment: $equipment');
+    parts.add('Location: $workoutLocation');
     parts.add('Availability: $daysPerWeek days/week, $minutesPerSession min');
+    if (preferredDays.isNotEmpty) {
+      parts.add('Preferred days: ${preferredDays.join(', ')}');
+    }
     parts.add('Diet: $dietaryPreference');
+    if (healthConditionNames.isNotEmpty) {
+      parts.add('Health: ${healthConditionNames.join(', ')}');
+    }
     if (bmi != null) {
       parts.add('BMI: ${bmi!.toStringAsFixed(1)}');
     }
@@ -139,9 +219,15 @@ class UserProfileService {
   static const _kMinutes = 'user_minutes_per_session';
   static const _kDiet = 'user_dietary_preference';
   static const _kLanguage = 'language';
+  static const _kGender = 'user_gender';
+  static const _kHealth = 'user_health_conditions';
+  static const _kLocation = 'user_workout_location';
+  static const _kPrefDays = 'user_preferred_days';
 
   Future<UserProfile> load() async {
     final prefs = await SharedPreferences.getInstance();
+    final healthJson = prefs.getString(_kHealth) ?? '[]';
+    final daysJson = prefs.getString(_kPrefDays) ?? '[]';
     return UserProfile(
       name: prefs.getString(_kName) ?? '',
       age: prefs.getString(_kAge) ?? '',
@@ -155,7 +241,21 @@ class UserProfileService {
       minutesPerSession: prefs.getString(_kMinutes) ?? '45',
       dietaryPreference: prefs.getString(_kDiet) ?? 'No preference',
       language: prefs.getString(_kLanguage) ?? 'English',
+      genderName: prefs.getString(_kGender) ?? 'male',
+      healthConditionNames: _decodeStringList(healthJson),
+      workoutLocation: prefs.getString(_kLocation) ?? 'Home',
+      preferredDays: _decodeStringList(daysJson),
     );
+  }
+
+  static List<String> _decodeStringList(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) {
+        return decoded.cast<String>();
+      }
+    } catch (_) {}
+    return <String>[];
   }
 
   Future<void> save(UserProfile profile) async {
@@ -172,6 +272,10 @@ class UserProfileService {
     await prefs.setString(_kMinutes, profile.minutesPerSession);
     await prefs.setString(_kDiet, profile.dietaryPreference);
     await prefs.setString(_kLanguage, profile.language);
+    await prefs.setString(_kGender, profile.genderName);
+    await prefs.setString(_kHealth, jsonEncode(profile.healthConditionNames));
+    await prefs.setString(_kLocation, profile.workoutLocation);
+    await prefs.setString(_kPrefDays, jsonEncode(profile.preferredDays));
   }
 
   /// Update a single field without touching the others.

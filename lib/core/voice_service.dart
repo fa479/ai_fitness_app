@@ -74,9 +74,14 @@ class VoiceService {
       _tts.setCompletionHandler(() {
         if (_onTtsComplete != null) _onTtsComplete!();
       });
+      _tts.setErrorHandler((dynamic message) {
+        debugPrint('TTS error: $message');
+        _onTtsComplete?.call();
+      });
       _ttsReady = true;
     } catch (e) {
       debugPrint('TTS init failed: $e');
+      _ttsReady = false;
     }
   }
 
@@ -97,41 +102,87 @@ class VoiceService {
       }
     }
 
-    final locale = L.language.sttLocale;
-    if (locale == null) {
+    final requestedLocale = L.language.sttLocale;
+    if (requestedLocale == null) {
       onStatus(VoiceState.unsupported);
       return false;
     }
 
-    // Try to select the requested locale. If the device does not have it
-    // installed we report unsupported rather than silently falling back.
     List<LocaleName> locales = <LocaleName>[];
     try {
       locales = await _stt.locales();
     } catch (_) {
       // Some platforms throw; treat as unsupported.
     }
-    final hasLocale = locales.any((l) => l.localeId == locale);
-    if (!hasLocale) {
+
+    debugPrint(
+      'STT requested locale: $requestedLocale, '
+      'device locales: ${locales.map((l) => l.localeId).toList()}',
+    );
+
+    // Try exact match first, then fall back to any locale with the same
+    // language prefix (e.g., 'en-US' → 'en-GB' / 'en-IN').
+    String? resolvedLocale;
+    if (locales.any((l) => l.localeId == requestedLocale)) {
+      resolvedLocale = requestedLocale;
+    } else {
+      final langPrefix = requestedLocale.split('-').first;
+
+      // Build a prioritized list: preferred variants first, then any
+      // device locale matching the language prefix.
+      final preferredFallbacks = <String>[];
+      if (langPrefix == 'en') {
+        preferredFallbacks.addAll(['en-US', 'en-GB', 'en-IN', 'en-AU', 'en']);
+      }
+
+      for (final l in locales) {
+        if (l.localeId.startsWith(langPrefix) &&
+            !preferredFallbacks.contains(l.localeId)) {
+          preferredFallbacks.add(l.localeId);
+        }
+      }
+
+      for (final candidate in preferredFallbacks) {
+        if (locales.any((l) => l.localeId == candidate)) {
+          resolvedLocale = candidate;
+          break;
+        }
+      }
+
+      // Last resort: use the first English-like locale the device offers.
+      if (resolvedLocale == null && langPrefix == 'en' && locales.isNotEmpty) {
+        resolvedLocale = locales.first.localeId;
+      }
+    }
+
+    debugPrint('STT resolved locale: $resolvedLocale');
+
+    if (resolvedLocale == null) {
       onStatus(VoiceState.unsupported);
       return false;
     }
 
     _listening = true;
     onStatus(VoiceState.listening);
-    final started = await _stt.listen(
-      onResult: (SpeechRecognitionResult result) {
-        onResult(result.recognizedWords, result.finalResult);
-      },
-      listenOptions: SpeechListenOptions(
-        localeId: locale,
-        partialResults: true,
-        cancelOnError: true,
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 4),
-      ),
-    );
-    return started == true;
+    try {
+      await _stt.listen(
+        onResult: (SpeechRecognitionResult result) {
+          onResult(result.recognizedWords, result.finalResult);
+        },
+        listenOptions: SpeechListenOptions(
+          localeId: resolvedLocale,
+          partialResults: true,
+          cancelOnError: false,
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 5),
+        ),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('STT listen() failed: $e');
+      _listening = false;
+      return false;
+    }
   }
 
   /// Stop an in-progress listening session.
@@ -144,33 +195,72 @@ class VoiceService {
   /// Returns true if speech actually started.
   /// [onComplete] is called when TTS finishes (on supported platforms).
   Future<bool> speak(String text, {void Function()? onComplete}) async {
-    if (text.trim().isEmpty) return false;
-    await initTts();
-    _onTtsComplete = onComplete;
-
-    final ttsLocale = L.language.ttsLocale;
-    if (ttsLocale == null) return false;
-
-    // Attempt to set the language. If the platform reports the language
-    // is unavailable we skip speaking rather than play the wrong language.
-    bool available = true;
-    try {
-      available = await _tts.isLanguageAvailable(ttsLocale);
-    } catch (_) {
-      available = false;
-    }
-    if (!available) return false;
-
-    try {
-      await _tts.setLanguage(ttsLocale);
-      await _tts.setSpeechRate(0.45);
-      await _tts.setPitch(1.0);
-    } catch (_) {
+    if (text.trim().isEmpty) {
+      onComplete?.call();
       return false;
     }
+    try {
+      await initTts();
+      if (!_ttsReady) {
+        onComplete?.call();
+        return false;
+      }
+      _onTtsComplete = onComplete;
 
-    final result = await _tts.speak(text);
-    return result == 1;
+      final ttsLocale = L.language.ttsLocale;
+      if (ttsLocale == null) {
+        onComplete?.call();
+        return false;
+      }
+
+      String localeToUse = ttsLocale;
+      bool available = true;
+      try {
+        available = await _tts.isLanguageAvailable(ttsLocale);
+      } catch (_) {
+        available = false;
+      }
+
+      if (!available) {
+        final langPrefix = ttsLocale.split('-').first;
+        const fallbacks = ['en-US', 'en-GB', 'en-IN'];
+        bool found = false;
+        for (final fallback in fallbacks) {
+          if (fallback.startsWith(langPrefix) || langPrefix == 'en') {
+            try {
+              if (await _tts.isLanguageAvailable(fallback)) {
+                localeToUse = fallback;
+                found = true;
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+        if (!found) {
+          onComplete?.call();
+          return false;
+        }
+      }
+
+      try {
+        await _tts.setLanguage(localeToUse);
+        await _tts.setSpeechRate(0.45);
+        await _tts.setPitch(1.0);
+      } catch (_) {
+        onComplete?.call();
+        return false;
+      }
+
+      final result = await _tts.speak(text);
+      if (result != 1) {
+        onComplete?.call();
+      }
+      return result == 1;
+    } catch (e) {
+      debugPrint('speak() failed: $e');
+      onComplete?.call();
+      return false;
+    }
   }
 
   /// Stop any ongoing TTS playback.

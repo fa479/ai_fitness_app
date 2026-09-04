@@ -1,0 +1,2660 @@
+      'fat': f,
+    };
+  }
+
+  /// Recommended daily calorie target from a profile.
+  int? targetCalories(UserProfile profile) {
+    final tdee = profile.tdee;
+    if (tdee == null) return null;
+    // Goal-aware adjustment, kept within safe bounds.
+    switch (profile.goal.toLowerCase()) {
+      case 'weight management':
+      case 'stay active':
+        return tdee.round();
+      case 'build strength':
+      case 'muscle gain':
+        return (tdee * 1.1).round();
+      case 'improve fitness':
+        return tdee.round();
+      default:
+        return (tdee * 0.9).round();
+    }
+  }
+
+  /// Analyze a food photo. When no API key is configured, returns an honest
+  /// message telling the user to log items manually. When a key is set,
+  /// asks the vision model and marks results as estimates.
+  Future<FoodAnalysis> analyzePhoto(File image) async {
+    if (!hasCloud) {
+      return const FoodAnalysis(
+        summary:
+            'AI food photo analysis is not connected. Add a Gemini API key '
+            'in Settings to enable photo recognition. For now, please pick '
+            'the food items from the list and enter the serving size.',
+        detectedItems: [],
+        isEstimate: false,
+        fromCloud: false,
+      );
+    }
+    try {
+      final bytes = await image.readAsBytes();
+      final b64 = base64Encode(bytes);
+      final endpoint = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/'
+        'gemini-1.5-flash:generateContent?key=$_apiKey',
+      );
+      final body = jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {
+                'text': 'Identify the food items in this image. Reply ONLY '
+                    'with a JSON array of objects with keys name, serving, '
+                    'calories, protein, carbs, fat (numbers). These are '
+                    'estimates.'
+              },
+              {
+                'inlineData': {'mimeType': 'image/jpeg', 'data': b64}
+              }
+            ],
+          },
+        ],
+      });
+      final res = await http.post(endpoint, body: body);
+      if (res.statusCode != 200) {
+        return const FoodAnalysis(
+          summary: 'Could not analyze the photo right now. Please log the '
+              'items manually.',
+          detectedItems: [],
+          isEstimate: false,
+        );
+      }
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final candidates = data['candidates'] as List?;
+      if (candidates == null || candidates.isEmpty) {
+        return const FoodAnalysis(
+          summary: 'No food recognized. Please log items manually.',
+          detectedItems: [],
+        );
+      }
+      final text = (candidates.first['content']['parts'] as List).first['text']
+          as String;
+      // Extract the JSON array from the response.
+      final start = text.indexOf('[');
+      final end = text.lastIndexOf(']');
+      if (start == -1 || end == -1) {
+        return FoodAnalysis(
+          summary: text.trim(),
+          detectedItems: [],
+          isEstimate: true,
+          fromCloud: true,
+        );
+      }
+      final jsonText = text.substring(start, end + 1);
+      final arr = jsonDecode(jsonText) as List;
+      final detected = arr
+          .map((e) => FoodItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return FoodAnalysis(
+        summary: 'Estimated items (AI vision — values are approximate):',
+        detectedItems: detected,
+        isEstimate: true,
+        fromCloud: true,
+      );
+    } catch (e) {
+      debugPrint('Food analysis failed: $e');
+      return const FoodAnalysis(
+        summary: 'Photo analysis failed. Please log items manually.',
+        detectedItems: [],
+      );
+    }
+  }
+}
+
+==================== .\lib\core\user_profile_service.dart ====================
+
+/// FitAI User Profile Service
+///
+/// Single source of truth for the personalization data every AI module
+/// reads from. Reuses the SharedPreferences keys already used by the
+/// existing Personal Information / Settings screens so existing data is
+/// preserved, and adds the richer profile fields described in the FitAI
+/// product documents (activity level, equipment, experience, etc.).
+library;
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Activity level, used by calorie/target calculations and the AI coach.
+enum ActivityLevel {
+  sedentary('Sedentary', 1.2),
+  light('Lightly active', 1.375),
+  moderate('Moderately active', 1.55),
+  active('Very active', 1.725),
+  athlete('Athlete', 1.9);
+
+  final String label;
+  final double factor;
+  const ActivityLevel(this.label, this.factor);
+
+  static ActivityLevel fromName(String? name) {
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    return ActivityLevel.sedentary;
+  }
+}
+
+/// Gender, used by BMR calculation.
+enum Gender { male, female, other }
+
+/// A snapshot of the user's profile used to personalize AI output.
+class UserProfile {
+  final String name;
+  final String age;
+  final String height; // cm
+  final String weight; // kg
+  final String goal;
+  final String activityLevelName;
+  final String experience; // Beginner / Intermediate / Advanced
+  final String equipment; // Home / Gym / Outdoor / None
+  final String daysPerWeek;
+  final String minutesPerSession;
+  final String dietaryPreference;
+  final String language;
+
+  const UserProfile({
+    this.name = '',
+    this.age = '',
+    this.height = '',
+    this.weight = '',
+    this.goal = 'Build strength',
+    this.activityLevelName = 'sedentary',
+    this.experience = 'Beginner',
+    this.equipment = 'None',
+    this.daysPerWeek = '3',
+    this.minutesPerSession = '45',
+    this.dietaryPreference = 'No preference',
+    this.language = 'English',
+  });
+
+  bool get isComplete =>
+      name.isNotEmpty &&
+      age.isNotEmpty &&
+      height.isNotEmpty &&
+      weight.isNotEmpty;
+
+  int? get ageInt => int.tryParse(age);
+  double? get heightCm => double.tryParse(height);
+  double? get weightKg => double.tryParse(weight);
+  ActivityLevel get activity => ActivityLevel.fromName(activityLevelName);
+
+  /// Body Mass Index, or null when height/weight are missing.
+  double? get bmi {
+    final h = heightCm;
+    final w = weightKg;
+    if (h == null || w == null || h <= 0) return null;
+    final m = h / 100;
+    return w / (m * m);
+  }
+
+  /// Basal Metabolic Rate (Mifflin–St Jeor). Male formula used as default.
+  double? get bmr {
+    final a = ageInt;
+    final h = heightCm;
+    final w = weightKg;
+    if (a == null || h == null || w == null) return null;
+    // Default to male; a gender field can refine this later.
+    return 10 * w + 6.25 * h - 5 * a + 5;
+  }
+
+  /// Total daily energy expenditure, used as the calorie target baseline.
+  double? get tdee {
+    final base = bmr;
+    if (base == null) return null;
+    return base * activity.factor;
+  }
+
+  /// A short, human-readable summary the AI coach prepends to its context.
+  String toContextSummary() {
+    final parts = <String>[];
+    if (name.isNotEmpty) parts.add('Name: $name');
+    if (ageInt != null) parts.add('Age: $age');
+    if (heightCm != null) parts.add('Height: $height cm');
+    if (weightKg != null) parts.add('Weight: $weight kg');
+    parts.add('Goal: $goal');
+    parts.add('Activity: ${activity.label}');
+    parts.add('Experience: $experience');
+    parts.add('Equipment: $equipment');
+    parts.add('Availability: $daysPerWeek days/week, $minutesPerSession min');
+    parts.add('Diet: $dietaryPreference');
+    if (bmi != null) {
+      parts.add('BMI: ${bmi!.toStringAsFixed(1)}');
+    }
+    if (tdee != null) {
+      parts.add('Est. daily calories: ${tdee!.round()} kcal');
+    }
+    return parts.join('; ');
+  }
+}
+
+/// Loads and persists the user profile via SharedPreferences.
+class UserProfileService {
+  UserProfileService._();
+  static final UserProfileService instance = UserProfileService._();
+
+  static const _kName = 'user_name';
+  static const _kAge = 'user_age';
+  static const _kHeight = 'user_height';
+  static const _kWeight = 'user_weight';
+  static const _kGoal = 'user_goal';
+  static const _kActivity = 'user_activity_level';
+  static const _kExperience = 'user_experience';
+  static const _kEquipment = 'user_equipment';
+  static const _kDays = 'user_days_per_week';
+  static const _kMinutes = 'user_minutes_per_session';
+  static const _kDiet = 'user_dietary_preference';
+  static const _kLanguage = 'language';
+
+  Future<UserProfile> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    return UserProfile(
+      name: prefs.getString(_kName) ?? '',
+      age: prefs.getString(_kAge) ?? '',
+      height: prefs.getString(_kHeight) ?? '',
+      weight: prefs.getString(_kWeight) ?? '',
+      goal: prefs.getString(_kGoal) ?? 'Build strength',
+      activityLevelName: prefs.getString(_kActivity) ?? 'sedentary',
+      experience: prefs.getString(_kExperience) ?? 'Beginner',
+      equipment: prefs.getString(_kEquipment) ?? 'None',
+      daysPerWeek: prefs.getString(_kDays) ?? '3',
+      minutesPerSession: prefs.getString(_kMinutes) ?? '45',
+      dietaryPreference: prefs.getString(_kDiet) ?? 'No preference',
+      language: prefs.getString(_kLanguage) ?? 'English',
+    );
+  }
+
+  Future<void> save(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kName, profile.name);
+    await prefs.setString(_kAge, profile.age);
+    await prefs.setString(_kHeight, profile.height);
+    await prefs.setString(_kWeight, profile.weight);
+    await prefs.setString(_kGoal, profile.goal);
+    await prefs.setString(_kActivity, profile.activityLevelName);
+    await prefs.setString(_kExperience, profile.experience);
+    await prefs.setString(_kEquipment, profile.equipment);
+    await prefs.setString(_kDays, profile.daysPerWeek);
+    await prefs.setString(_kMinutes, profile.minutesPerSession);
+    await prefs.setString(_kDiet, profile.dietaryPreference);
+    await prefs.setString(_kLanguage, profile.language);
+  }
+
+  /// Update a single field without touching the others.
+  Future<void> setField(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+}
+
+==================== .\lib\core\voice_service.dart ====================
+
+/// FitAI Voice Service
+///
+/// Wraps speech-to-text (STT) and text-to-speech (TTS) so the AI coach
+/// can be used entirely by voice. Each supported language carries STT/TTS
+/// locale metadata; when a language is not supported on the device the
+/// service reports that honestly instead of pretending to listen.
+library;
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+
+import '../app/app_localizations.dart';
+
+/// Callback type for partial/final speech results.
+typedef VoiceResult = void Function(String text, bool isFinal);
+
+/// Callback type for status updates (listening, not listening, errors).
+typedef VoiceStatus = void Function(VoiceState state);
+
+/// High-level state of the voice pipeline.
+enum VoiceState { idle, listening, thinking, speaking, error, unsupported }
+
+class VoiceService {
+  VoiceService._internal();
+  static final VoiceService instance = VoiceService._internal();
+
+  final SpeechToText _stt = SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+
+  bool _sttAvailable = false;
+  bool _ttsReady = false;
+  bool _listening = false;
+  void Function()? _onTtsComplete;
+
+  /// Whether STT can be used on this device right now.
+  bool get isSttAvailable => _sttAvailable;
+
+  /// Whether the current language has a known STT locale.
+  bool get currentLanguageSupportsStt => L.language.supportsStt;
+
+  /// Whether the current language has a known TTS locale.
+  bool get currentLanguageSupportsTts => L.language.supportsTts;
+
+  /// Initialize the speech engine. Returns true if STT is usable.
+  Future<bool> initStt() async {
+    if (_sttAvailable) return true;
+    try {
+      _sttAvailable = await _stt.initialize(
+        onError: (SpeechRecognitionError error) {
+          debugPrint('STT error: ${error.errorMsg}');
+        },
+        onStatus: (String status) {
+          debugPrint('STT status: $status');
+          if (status == 'notListening' && _listening) {
+            _listening = false;
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('STT init failed: $e');
+      _sttAvailable = false;
+    }
+    return _sttAvailable;
+  }
+
+  /// Initialize the TTS engine and set up completion handler.
+  Future<void> initTts() async {
+    if (_ttsReady) return;
+    try {
+      await _tts.setSharedInstance(true);
+      _tts.setCompletionHandler(() {
+        if (_onTtsComplete != null) _onTtsComplete!();
+      });
+      _ttsReady = true;
+    } catch (e) {
+      debugPrint('TTS init failed: $e');
+    }
+  }
+
+  /// Start listening for speech in the current language.
+  ///
+  /// Calls [onResult] with recognized text (partial then final) and
+  /// [onStatus] for state changes. Returns false when voice is not
+  /// available for the active language so the caller can inform the user.
+  Future<bool> startListening({
+    required VoiceResult onResult,
+    required VoiceStatus onStatus,
+  }) async {
+    if (!_sttAvailable) {
+      final ok = await initStt();
+      if (!ok) {
+        onStatus(VoiceState.unsupported);
+        return false;
+      }
+    }
+
+    final locale = L.language.sttLocale;
+    if (locale == null) {
+      onStatus(VoiceState.unsupported);
+      return false;
+    }
+
+    // Try to select the requested locale. If the device does not have it
+    // installed we report unsupported rather than silently falling back.
+    List<LocaleName> locales = <LocaleName>[];
+    try {
+      locales = await _stt.locales();
+    } catch (_) {
+      // Some platforms throw; treat as unsupported.
+    }
+    final hasLocale = locales.any((l) => l.localeId == locale);
+    if (!hasLocale) {
+      onStatus(VoiceState.unsupported);
+      return false;
+    }
+
+    _listening = true;
+    onStatus(VoiceState.listening);
+    final started = await _stt.listen(
+      onResult: (SpeechRecognitionResult result) {
+        onResult(result.recognizedWords, result.finalResult);
+      },
+      listenOptions: SpeechListenOptions(
+        localeId: locale,
+        partialResults: true,
+        cancelOnError: true,
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 4),
+      ),
+    );
+    return started == true;
+  }
+
+  /// Stop an in-progress listening session.
+  Future<void> stopListening() async {
+    _listening = false;
+    await _stt.stop();
+  }
+
+  /// Speak [text] aloud using TTS in the current language, when supported.
+  /// Returns true if speech actually started.
+  /// [onComplete] is called when TTS finishes (on supported platforms).
+  Future<bool> speak(String text, {void Function()? onComplete}) async {
+    if (text.trim().isEmpty) return false;
+    await initTts();
+    _onTtsComplete = onComplete;
+
+    final ttsLocale = L.language.ttsLocale;
+    if (ttsLocale == null) return false;
+
+    // Attempt to set the language. If the platform reports the language
+    // is unavailable we skip speaking rather than play the wrong language.
+    bool available = true;
+    try {
+      available = await _tts.isLanguageAvailable(ttsLocale);
+    } catch (_) {
+      available = false;
+    }
+    if (!available) return false;
+
+    try {
+      await _tts.setLanguage(ttsLocale);
+      await _tts.setSpeechRate(0.45);
+      await _tts.setPitch(1.0);
+    } catch (_) {
+      return false;
+    }
+
+    final result = await _tts.speak(text);
+    return result == 1;
+  }
+
+  /// Stop any ongoing TTS playback.
+  Future<void> stopSpeaking() async {
+    try {
+      await _tts.stop();
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  /// Release native resources (call on app shutdown if desired).
+  Future<void> dispose() async {
+    try {
+      await _stt.stop();
+      await _tts.stop();
+    } catch (_) {
+      // ignore
+    }
+  }
+}
+
+==================== .\lib\features\form_check_screen.dart ====================
+
+/// FitAI AI Form Check Screen — Real Camera Pose Detection
+///
+/// This screen fixes the broken AIFormCheckScreen from main.dart.
+/// It uses Google ML Kit Pose Detection on the live camera stream to:
+///   - detect body landmarks in real time
+///   - draw a skeleton overlay
+///   - compute joint angles
+///   - count reps with a state machine
+///   - give real form feedback
+///
+/// Every number shown to the user comes from actual ML Kit landmark data.
+/// When no body is detected, the UI says so clearly — no fake results.
+library;
+
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../core/pose_analyzer.dart';
+import '../core/voice_service.dart';
+import '../app/app_localizations.dart' show L;
+
+class FormCheckScreen extends StatefulWidget {
+  final int targetSets;
+  final int targetRepsPerSet;
+  final void Function(int completedSets, int totalReps)? onExerciseCompleted;
+
+  const FormCheckScreen({
+    super.key,
+    this.targetSets = 3,
+    this.targetRepsPerSet = 10,
+    this.onExerciseCompleted,
+  });
+
+  @override
+  State<FormCheckScreen> createState() => _FormCheckScreenState();
+}
+
+class _FormCheckScreenState extends State<FormCheckScreen> {
+  CameraController? _cameraController;
+  PoseDetector? _poseDetector;
+
+  final PoseAnalyzer _analyzer = PoseAnalyzer();
+
+  List<CameraDescription> _cameras = [];
+  int _currentCameraIndex = 0;
+
+  bool _isCameraReady = false;
+  bool _isProcessing = false;
+  bool _hasPermission = false;
+
+  String _statusMessage = 'Initializing...';
+
+  Pose? _latestPose;
+
+  int _imageWidth = 0;
+  int _imageHeight = 0;
+
+  InputImageRotation _rotation = InputImageRotation.rotation0deg;
+
+  PoseAnalysis _analysis = const PoseAnalysis();
+
+  String _lastSpokenIssueKey = '';
+  int _lastSpokenRepCount = 0;
+  bool _lastBodyDetected = false;
+  DateTime _lastVoiceTime = DateTime.now();
+
+  static const Duration _voiceCooldown = Duration(seconds: 5);
+
+  bool _setJustCompleteded = false;
+  bool _exerciseCompletionHandled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyzer.configureSets(
+      targetSets: widget.targetSets,
+      targetRepsPerSet: widget.targetRepsPerSet,
+    );
+    _setupCamera();
+  }
+
+  // ================================================================
+  // CAMERA SETUP
+  // ================================================================
+
+  Future<void> _setupCamera() async {
+    final permission = await Permission.camera.request();
+
+    if (!permission.isGranted) {
+      if (!mounted) return;
+
+      setState(() {
+        _statusMessage =
+            'Camera permission denied.\n'
+            'Please allow camera access in Settings.';
+      });
+
+      return;
+    }
+
+    _hasPermission = true;
+
+    try {
+      _cameras = await availableCameras();
+
+      if (_cameras.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _statusMessage = 'No camera found on this device.';
+        });
+
+        return;
+      }
+
+      // Prefer back camera when the screen opens.
+      final backIndex = _cameras.indexWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+      );
+
+      _currentCameraIndex = backIndex >= 0 ? backIndex : 0;
+
+      await _initializeSelectedCamera();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Camera setup error: $e');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _statusMessage = 'Camera initialization failed.\n$e';
+      });
+    }
+  }
+
+  Future<void> _initializeSelectedCamera() async {
+    await _stopCamera();
+
+    final camera = _cameras[_currentCameraIndex];
+
+    _cameraController = CameraController(
+      camera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+      imageFormatGroup: Platform.isAndroid
+          ? ImageFormatGroup.yuv420
+          : ImageFormatGroup.bgra8888,
+    );
+
+    await _cameraController!.initialize();
+
+    _poseDetector ??= PoseDetector(
+      options: PoseDetectorOptions(
+        model: PoseDetectionModel.base,
+        mode: PoseDetectionMode.stream,
+      ),
+    );
+
+    _rotation =
+        InputImageRotationValue.fromRawValue(camera.sensorOrientation) ??
+        InputImageRotation.rotation0deg;
+
+    _latestPose = null;
+    _analysis = const PoseAnalysis();
+
+    await _cameraController!.startImageStream(_onCameraImage);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isCameraReady = true;
+      _statusMessage = 'Position your full body inside the frame.';
+    });
+  }
+
+  // ================================================================
+  // SWITCH FRONT / BACK CAMERA
+  // ================================================================
+
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only one camera is available on this device.'),
+        ),
+      );
+      return;
+    }
+
+    if (_isProcessing) {
+      return;
+    }
+
+    setState(() {
+      _isCameraReady = false;
+      _statusMessage = 'Switching camera...';
+    });
+
+    _currentCameraIndex =
+        (_currentCameraIndex + 1) % _cameras.length;
+
+    try {
+      await _initializeSelectedCamera();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Camera switch error: $e');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _statusMessage = 'Could not switch camera.\n$e';
+      });
+    }
+  }
+
+  String get _cameraName {
+    if (_cameras.isEmpty) return 'Camera';
+
+    final direction = _cameras[_currentCameraIndex].lensDirection;
+
+    if (direction == CameraLensDirection.front) {
+      return 'Front Camera';
+    }
+
+    return 'Back Camera';
+  }
+
+  // ================================================================
+  // CAMERA IMAGE PROCESSING
+  // ================================================================
+
+  void _onCameraImage(CameraImage image) {
+    if (_isProcessing || _poseDetector == null) {
+      return;
+    }
+
+    _isProcessing = true;
+
+    _processFrame(image).whenComplete(() {
+      _isProcessing = false;
+    });
+  }
+
+  Future<void> _processFrame(CameraImage image) async {
+    try {
+      _imageWidth = image.width;
+      _imageHeight = image.height;
+
+      final inputImage = _buildInputImage(image);
+
+      if (inputImage == null) {
+        return;
+      }
+
+      final poses = await _poseDetector!.processImage(inputImage);
+
+      final pose = poses.isNotEmpty ? poses.first : null;
+
+      // IMPORTANT:
+      // If no actual pose is detected, analyzer receives null.
+      // Therefore reps cannot increase without real pose data.
+      final prevCompletedSets = _analyzer.completedSets;
+      final analysis = _analyzer.analyze(pose);
+      final setJustDone = _analyzer.completedSets > prevCompletedSets;
+
+      if (!mounted) return;
+
+      setState(() {
+        _latestPose = pose;
+        _analysis = analysis;
+        _setJustCompleteded = setJustDone;
+      });
+
+      if (setJustDone) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _setJustCompleteded = false);
+        });
+      }
+
+      // Handle exercise completion.
+      if (_analyzer.exerciseCompleted && !_exerciseCompletionHandled) {
+        _exerciseCompletionHandled = true;
+        final totalSets = _analyzer.completedSets;
+        final totalReps = totalSets * widget.targetRepsPerSet;
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && widget.onExerciseCompleted != null) {
+            widget.onExerciseCompleted!(totalSets, totalReps);
+          }
+        });
+      }
+
+      _maybeSpeakFeedback(analysis);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Pose detection error: $e');
+      }
+    }
+  }
+
+  // ================================================================
+  // INPUT IMAGE
+  // ================================================================
+
+  InputImage? _buildInputImage(CameraImage image) {
+    if (Platform.isAndroid) {
+      return _buildInputImageAndroid(image);
+    }
+
+    if (Platform.isIOS) {
+      return _buildInputImageIos(image);
+    }
+
+    return null;
+  }
+
+  InputImage? _buildInputImageAndroid(CameraImage image) {
+    try {
+      if (image.planes.length < 3) {
+        return null;
+      }
+
+      final width = image.width;
+      final height = image.height;
+
+      final yPlane = image.planes[0];
+      final uPlane = image.planes[1];
+      final vPlane = image.planes[2];
+
+      final yRowStride = yPlane.bytesPerRow;
+      final uRowStride = uPlane.bytesPerRow;
+      final vRowStride = vPlane.bytesPerRow;
+
+      final uPixelStride = uPlane.bytesPerPixel ?? 1;
+      final vPixelStride = vPlane.bytesPerPixel ?? 1;
+
+      final ySize = width * height;
+      final nv21 = Uint8List(ySize + ySize ~/ 2);
+
+      int index = 0;
+
+      // Y plane.
+      for (int row = 0; row < height; row++) {
+        final rowStart = row * yRowStride;
+
+        for (int col = 0; col < width; col++) {
+          nv21[index++] = yPlane.bytes[rowStart + col];
+        }
+      }
+
+      // VU planes.
+      for (int row = 0; row < height ~/ 2; row++) {
+        final uStart = row * uRowStride;
+        final vStart = row * vRowStride;
+
+        for (int col = 0; col < width ~/ 2; col++) {
+          nv21[index++] =
+              vPlane.bytes[vStart + col * vPixelStride];
+
+          nv21[index++] =
+              uPlane.bytes[uStart + col * uPixelStride];
+        }
+      }
+
+      return InputImage.fromBytes(
+        bytes: nv21,
+        metadata: InputImageMetadata(
+          size: ui.Size(
+            width.toDouble(),
+            height.toDouble(),
+          ),
+          rotation: _rotation,
+          format: InputImageFormat.nv21,
+          bytesPerRow: width,
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Android input image error: $e');
+      }
+
+      return null;
+    }
+  }
+
+  InputImage? _buildInputImageIos(CameraImage image) {
+    try {
+      final width = image.width;
+      final height = image.height;
+
+      final plane = image.planes.first;
+
+      return InputImage.fromBytes(
+        bytes: Uint8List.fromList(plane.bytes),
+        metadata: InputImageMetadata(
+          size: ui.Size(
+            width.toDouble(),
+            height.toDouble(),
+          ),
+          rotation: _rotation,
+          format: InputImageFormat.bgra8888,
+          bytesPerRow: plane.bytesPerRow,
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('iOS input image error: $e');
+      }
+
+      return null;
+    }
+  }
+
+  // ================================================================
+  // VOICE FEEDBACK
+  // ================================================================
+
+  void _maybeSpeakFeedback(PoseAnalysis analysis) {
+    final now = DateTime.now();
+
+    final currentIssue = analysis.formIssueKey;
+    final currentReps = analysis.reps;
+    final bodyDetected = analysis.bodyDetected;
+
+    String? toSpeak;
+
+    if (!bodyDetected && _lastBodyDetected) {
+      toSpeak = L.t('formMoveIntoFrame');
+    } else if (bodyDetected && !_lastBodyDetected) {
+      if (currentIssue.isNotEmpty) {
+        toSpeak = L.t(currentIssue);
+      }
+    } else if (currentIssue.isNotEmpty &&
+        currentIssue != _lastSpokenIssueKey) {
+      toSpeak = L.t(currentIssue);
+    } else if (currentIssue.isEmpty &&
+        _lastSpokenIssueKey.isNotEmpty) {
+      toSpeak = L.t('formGoodForm');
+    } else if (currentReps > _lastSpokenRepCount) {
+      toSpeak = '$currentReps ${L.t("reps")}';
+    }
+
+    if (toSpeak != null &&
+        now.difference(_lastVoiceTime) > _voiceCooldown) {
+      _lastVoiceTime = now;
+      VoiceService.instance.speak(toSpeak);
+    }
+
+    _lastSpokenIssueKey = currentIssue;
+    _lastSpokenRepCount = currentReps;
+    _lastBodyDetected = bodyDetected;
+  }
+
+  // ================================================================
+  // DISPOSE CAMERA
+  // ================================================================
+
+  Future<void> _stopCamera() async {
+    final controller = _cameraController;
+
+    if (controller == null) {
+      return;
+    }
+
+    try {
+      if (controller.value.isStreamingImages) {
+        await controller.stopImageStream();
+      }
+    } catch (_) {}
+
+    await controller.dispose();
+
+    _cameraController = null;
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.stopImageStream();
+    _cameraController?.dispose();
+    _poseDetector?.close();
+
+    super.dispose();
+  }
+
+  // ================================================================
+  // BUILD
+  // ================================================================
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('formCheck'),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          // FRONT / BACK CAMERA BUTTON
+          IconButton(
+            onPressed: _isCameraReady ? _switchCamera : null,
+            tooltip: 'Switch Camera',
+            icon: const Icon(Icons.flip_camera_ios),
+          ),
+
+          PopupMenuButton<ExerciseType>(
+            icon: const Icon(Icons.fitness_center),
+            tooltip: 'Select Exercise',
+            onSelected: (type) {
+              _analyzer.setExercise(type);
+
+              setState(() {
+                _latestPose = null;
+                _analysis = const PoseAnalysis();
+              });
+            },
+            itemBuilder: (_) {
+              return ExerciseType.values
+                  .map(
+                    (exercise) => PopupMenuItem<ExerciseType>(
+                      value: exercise,
+                      child: Text(exercise.displayName),
+                    ),
+                  )
+                  .toList();
+            },
+          ),
+        ],
+      ),
+      body: _isCameraReady &&
+              _cameraController != null &&
+              _cameraController!.value.isInitialized
+          ? _buildCameraView()
+          : _buildLoadingView(),
+    );
+  }
+
+  // ================================================================
+  // LOADING
+  // ================================================================
+
+  Widget _buildLoadingView() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!_hasPermission)
+              const Icon(
+                Icons.camera_alt_outlined,
+                size: 52,
+                color: Colors.grey,
+              )
+            else
+              const CircularProgressIndicator(),
+
+            const SizedBox(height: 18),
+
+            Text(
+              _statusMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================================================================
+  // CAMERA VIEW
+  // ================================================================
+
+  Widget _buildCameraView() {
+    final controller = _cameraController!;
+
+    return Column(
+      children: [
+        // Instruction banner.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
+          color: Colors.blue.shade50,
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 18,
+                color: Colors.blue.shade700,
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: Text(
+                  _analyzer.exercise.instruction,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Camera.
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Camera preview.
+                  CameraPreview(controller),
+
+                  // Skeleton.
+                  if (_latestPose != null)
+                    CustomPaint(
+                      painter: SkeletonPainter(
+                        pose: _latestPose!,
+                        imageSize: _rotatedSize(),
+                        previewSize: Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        ),
+                        rotation: _rotation,
+                        isFrontCamera:
+                            _cameras[_currentCameraIndex]
+                                    .lensDirection ==
+                                CameraLensDirection.front,
+                      ),
+                    ),
+
+                  // Camera name.
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _cameraName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Info banner.
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 48),
+                      child: _buildInfoBanner(),
+                    ),
+                  ),
+
+                  // Bottom stats.
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    child: _buildStatsBar(),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================================================================
+  // IMAGE SIZE
+  // ================================================================
+
+  ui.Size _rotatedSize() {
+    if (_rotation == InputImageRotation.rotation90deg ||
+        _rotation == InputImageRotation.rotation270deg) {
+      return ui.Size(
+        _imageHeight.toDouble(),
+        _imageWidth.toDouble(),
+      );
+    }
+
+    return ui.Size(
+      _imageWidth.toDouble(),
+      _imageHeight.toDouble(),
+    );
+  }
+
+  // ================================================================
+  // INFO BANNER
+  // ================================================================
+
+  Widget _buildInfoBanner() {
+    final String headline;
+    final String detail;
+    final Color color;
+
+    if (!_analysis.bodyDetected) {
+      headline = 'No body detected';
+      detail = 'Step back and make sure your full body is visible.';
+      color = Colors.red;
+    } else if (_analysis.formIssueKey == 'squatReady') {
+      headline = L.t('squatReady');
+      detail = 'Stand tall and get ready.';
+      color = Colors.blue;
+    } else if (_analysis.formIssueKey == 'squatLowerSlowly') {
+      headline = L.t('squatLowerSlowly');
+      detail = '';
+      color = Colors.blue;
+    } else if (_analysis.formIssueKey.isNotEmpty) {
+      headline = L.t('formNeedsAdjustment');
+      detail = L.t(_analysis.formIssueKey);
+
+      color = switch (_analysis.formQuality) {
+        FormQuality.good => Colors.green,
+        FormQuality.warning => Colors.orange,
+        FormQuality.poor => Colors.red,
+        FormQuality.none => Colors.grey,
+      };
+    } else {
+      headline = L.t('formGoodForm');
+      detail = L.t('formKeepGoing');
+      color = Colors.green;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.fitness_center,
+                color: color,
+                size: 18,
+              ),
+
+              const SizedBox(width: 6),
+
+              Flexible(
+                child: Text(
+                  _analyzer.exercise.displayName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              if (_analysis.bodyDetected)
+                Icon(
+                  Icons.check_circle,
+                  color: color,
+                  size: 18,
+                )
+              else
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 18,
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            headline,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          if (detail.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              detail,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ================================================================
+  // STATS BAR
+  // ================================================================
+
+  Widget _buildStatsBar() {
+    final setLabel = _analyzer.targetSets > 0
+        ? '${_analyzer.currentSet}/${_analyzer.targetSets}'
+        : '${_analyzer.currentSet}';
+
+    final repsLabel = _analyzer.targetRepsPerSet > 0
+        ? '${_analysis.reps}/${_analyzer.targetRepsPerSet}'
+        : '${_analysis.reps}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          // Set progress row.
+          Row(
+            children: [
+              Expanded(
+                child: _statItem(
+                  'Set',
+                  _analyzer.exerciseCompleted
+                      ? 'Done'
+                      : setLabel,
+                ),
+              ),
+              Expanded(
+                child: _statItem(
+                  'Reps',
+                  _analysis.bodyDetected ? repsLabel : '0',
+                ),
+              ),
+              Expanded(
+                child: _statItem(
+                  'Exercise',
+                  _analyzer.exercise.displayName,
+                ),
+              ),
+              Expanded(
+                child: _statItem(
+                  'Angle',
+                  _analysis.bodyDetected &&
+                          _analysis.primaryAngle > 0
+                      ? '${_analysis.primaryAngle.round()}\u00b0'
+                      : '--',
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          // Set completion indicator.
+          if (_setJustCompleteded && !_analyzer.exerciseCompleted)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Set ${_analyzer.completedSets} complete! Rest and start Set ${_analyzer.currentSet}.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          if (_analyzer.exerciseCompleted)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'All ${_analyzer.completedSets} sets complete! Great work!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.amberAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statItem(String label, String value) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ====================================================================
+// SKELETON PAINTER
+// ====================================================================
+
+class SkeletonPainter extends CustomPainter {
+  final Pose pose;
+  final ui.Size imageSize;
+  final ui.Size previewSize;
+  final InputImageRotation rotation;
+  final bool isFrontCamera;
+
+  static const double _minConfidence = 0.3;
+
+  SkeletonPainter({
+    required this.pose,
+    required this.imageSize,
+    required this.previewSize,
+    required this.rotation,
+    required this.isFrontCamera,
+  });
+
+  ui.Size get _rotatedSize {
+    if (rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg) {
+      return ui.Size(
+        imageSize.height,
+        imageSize.width,
+      );
+    }
+
+    return imageSize;
+  }
+
+  Offset? _toPreview(PoseLandmark landmark) {
+    if (landmark.likelihood < _minConfidence) {
+      return null;
+    }
+
+    final rotated = _rotatedSize;
+
+    if (rotated.width <= 0 || rotated.height <= 0) {
+      return null;
+    }
+
+    double nx = landmark.x / rotated.width;
+    final ny = landmark.y / rotated.height;
+
+    // Mirror skeleton for front camera so it follows
+    // the mirrored camera preview naturally.
+    if (isFrontCamera) {
+      nx = 1.0 - nx;
+    }
+
+    return Offset(
+      nx * previewSize.width,
+      ny * previewSize.height,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, ui.Size size) {
+    final landmarks = pose.landmarks;
+
+    if (landmarks.isEmpty) {
+      return;
+    }
+
+    final linePaint = Paint()
+      ..color = Colors.cyan.withValues(alpha: 0.85)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    final goodPaint = Paint()
+      ..color = Colors.green;
+
+    final lowPaint = Paint()
+      ..color = Colors.orange;
+
+    // Draw bones.
+    for (final connection in skeletonConnections) {
+      final first = landmarks[connection[0]];
+      final second = landmarks[connection[1]];
+
+      if (first == null || second == null) {
+        continue;
+      }
+
+      final pointA = _toPreview(first);
+      final pointB = _toPreview(second);
+
+      if (pointA == null || pointB == null) {
+        continue;
+      }
+
+      canvas.drawLine(
+        pointA,
+        pointB,
+        linePaint,
+      );
+    }
+
+    // Draw joints.
+    for (final landmark in landmarks.values) {
+      final position = _toPreview(landmark);
+
+      if (position == null) {
+        continue;
+      }
+
+      final paint =
+          landmark.likelihood >= 0.7
+              ? goodPaint
+              : lowPaint;
+
+      canvas.drawCircle(
+        position,
+        5,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant SkeletonPainter oldDelegate,
+  ) {
+    return pose != oldDelegate.pose ||
+        isFrontCamera != oldDelegate.isFrontCamera ||
+        imageSize != oldDelegate.imageSize ||
+        previewSize != oldDelegate.previewSize ||
+        rotation != oldDelegate.rotation;
+  }
+}
+
+// ====================================================================
+// SKELETON CONNECTIONS
+// ====================================================================
+
+const List<List<PoseLandmarkType>> skeletonConnections = [
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftEar,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightEar,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftElbow,
+  ],
+  [
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.leftWrist,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightElbow,
+  ],
+  [
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.rightWrist,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftHip,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightHip,
+  ],
+  [
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.rightHip,
+  ],
+  [
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.leftKnee,
+  ],
+  [
+    PoseLandmarkType.leftKnee,
+    PoseLandmarkType.leftAnkle,
+  ],
+  [
+    PoseLandmarkType.leftAnkle,
+    PoseLandmarkType.leftHeel,
+  ],
+  [
+    PoseLandmarkType.leftHeel,
+    PoseLandmarkType.leftFootIndex,
+  ],
+  [
+    PoseLandmarkType.rightHip,
+    PoseLandmarkType.rightKnee,
+  ],
+  [
+    PoseLandmarkType.rightKnee,
+    PoseLandmarkType.rightAnkle,
+  ],
+  [
+    PoseLandmarkType.rightAnkle,
+    PoseLandmarkType.rightHeel,
+  ],
+  [
+    PoseLandmarkType.rightHeel,
+    PoseLandmarkType.rightFootIndex,
+  ],
+];
+
+==================== .\lib\features\ai_coach_screen.dart ====================
+
+/// FitAI AI Coach Chat Screen — Multilingual Voice + Text Chat
+///
+/// Replaces the fake AICoachScreen from main.dart with a real chat
+/// interface that supports both text and voice input in the user's
+/// selected language. Uses:
+///   - AICoachEngine for multilingual, personalized responses
+///   - VoiceService for speech-to-text (STT) and text-to-speech (TTS)
+///   - UserProfileService for personalization context
+///
+/// The user can type a message or tap the microphone to speak. The AI
+/// responds in the same language. TTS lets the user listen to responses.
+/// States for listening, thinking, and speaking are clearly shown.
+library;
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../app/app_localizations.dart' show L;
+import '../core/ai_coach_engine.dart';
+import '../core/food_data.dart';
+import '../core/user_profile_service.dart';
+import '../core/voice_service.dart';
+
+/// A single chat message.
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+  final bool fromCloud;
+  final bool personalized;
+
+  const ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+    this.fromCloud = false,
+    this.personalized = false,
+  });
+}
+
+class AICoachChatScreen extends StatefulWidget {
+  const AICoachChatScreen({super.key});
+
+  @override
+  State<AICoachChatScreen> createState() => _AICoachChatScreenState();
+}
+
+class _AICoachChatScreenState extends State<AICoachChatScreen> {
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+
+  UserProfile? _profile;
+  VoiceState _voiceState = VoiceState.idle;
+  String _partialText = '';
+  bool _isThinking = false;
+  bool _isSpeaking = false;
+  bool _ttsEnabled = true;
+
+  /// Gemini API key for optional cloud AI.
+  static const _kApiKeyPref = 'gemini_api_key';
+
+  @override
+  void initState() {
+    super.initState();
+    _initChat();
+  }
+
+  Future<void> _initChat() async {
+    // Load user profile.
+    _profile = await UserProfileService.instance.load();
+
+    // Initialize the voice service.
+    await VoiceService.instance.initStt();
+    await VoiceService.instance.initTts();
+
+    // Load the API key if previously saved.
+    final prefs = await SharedPreferences.getInstance();
+    final key = prefs.getString(_kApiKeyPref);
+    if (key != null && key.isNotEmpty) {
+      AICoachEngine.instance.setApiKey(key);
+      NutritionService.instance.setApiKey(key);
+    }
+
+    // Show a greeting from the coach.
+    final profile = _profile;
+    if (profile != null) {
+      final greeting = AICoachEngine.instance.greeting(profile);
+      setState(() {
+        _messages.add(ChatMessage(
+          text: greeting,
+          isUser: false,
+          timestamp: DateTime.now(),
+          personalized: profile.isComplete,
+        ));
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    VoiceService.instance.stopListening();
+    VoiceService.instance.stopSpeaking();
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Send a message (text or voice-transcribed)
+  // -------------------------------------------------------------------
+
+  Future<void> _sendMessage(String text) async {
+    text = text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add(ChatMessage(
+        text: text,
+        isUser: true,
+        timestamp: DateTime.now(),
+      ));
+      _isThinking = true;
+      _partialText = '';
+      _textController.clear();
+    });
+    _scrollToBottom();
+
+    final profile = _profile;
+    if (profile == null) return;
+    try {
+      final response = await AICoachEngine.instance.respond(text, profile);
+      setState(() {
+        _messages.add(ChatMessage(
+          text: response.text,
+          isUser: false,
+          timestamp: DateTime.now(),
+          fromCloud: response.fromCloud,
+          personalized: response.personalized,
+        ));
+        _isThinking = false;
+      });
+      _scrollToBottom();
+
+      // Auto-speak the response if TTS is enabled.
+      if (_ttsEnabled && response.text.isNotEmpty) {
+        _speakResponse(response.text);
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: 'Sorry, something went wrong. Please try again.',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+        _isThinking = false;
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Voice input (STT)
+  // -------------------------------------------------------------------
+
+  Future<void> _toggleVoiceInput() async {
+    if (_voiceState == VoiceState.listening) {
+      await VoiceService.instance.stopListening();
+      setState(() => _voiceState = VoiceState.idle);
+      // Send whatever partial text we have.
+      if (_partialText.isNotEmpty) {
+        _sendMessage(_partialText);
+      }
+      return;
+    }
+
+    if (_voiceState == VoiceState.speaking) {
+      await VoiceService.instance.stopSpeaking();
+      setState(() {
+        _isSpeaking = false;
+        _voiceState = VoiceState.idle;
+      });
+      return;
+    }
+
+    // Start listening.
+    if (!VoiceService.instance.isSttAvailable ||
+        !VoiceService.instance.currentLanguageSupportsStt) {
+      _showSnackBar(
+        'Voice input is not available for ${L.language.name} '
+        'on this device. Please type your message instead.',
+      );
+      return;
+    }
+
+    setState(() => _voiceState = VoiceState.listening);
+
+    final started = await VoiceService.instance.startListening(
+      onResult: (text, isFinal) {
+        setState(() => _partialText = text);
+        if (isFinal && text.isNotEmpty) {
+          _sendMessage(text);
+          setState(() => _voiceState = VoiceState.idle);
+        }
+      },
+      onStatus: (state) {
+        if (state == VoiceState.idle || state == VoiceState.error) {
+          setState(() {
+            _voiceState = VoiceState.idle;
+            if (_partialText.isNotEmpty) {
+              _sendMessage(_partialText);
+            }
+          });
+        }
+      },
+    );
+
+    if (!started) {
+      setState(() {
+        _voiceState = VoiceState.idle;
+      });
+      _showSnackBar(
+        'Could not start voice recognition. '
+        'Please check microphone permissions.',
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Voice output (TTS)
+  // -------------------------------------------------------------------
+
+  Future<void> _speakResponse(String text) async {
+    if (!VoiceService.instance.currentLanguageSupportsTts) return;
+
+    setState(() {
+      _isSpeaking = true;
+      _voiceState = VoiceState.speaking;
+    });
+
+    await VoiceService.instance.speak(text, onComplete: () {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _voiceState = VoiceState.idle;
+        });
+      }
+    });
+  }
+
+  Future<void> _stopSpeaking() async {
+    await VoiceService.instance.stopSpeaking();
+    setState(() {
+      _isSpeaking = false;
+      _voiceState = VoiceState.idle;
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // API key dialog (optional cloud AI)
+  // -------------------------------------------------------------------
+
+  Future<void> _showApiKeyDialog() async {
+    final controller = TextEditingController(
+      text: AICoachEngine.instance.apiKey ?? '',
+    );
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('AI Cloud Settings (Optional)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter a Gemini API key for richer cloud-based AI responses. '
+              'Leave empty to use the on-device coach.\n\n'
+              'Get a free key at: aistudio.google.com',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Gemini API Key',
+                border: OutlineInputBorder(),
+                hintText: 'AIza...',
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      AICoachEngine.instance.setApiKey(result);
+      NutritionService.instance.setApiKey(result);
+      final prefs = await SharedPreferences.getInstance();
+      if (result.isEmpty) {
+        await prefs.remove(_kApiKeyPref);
+      } else {
+        await prefs.setString(_kApiKeyPref, result);
+      }
+      _showSnackBar(result.isEmpty
+          ? 'Switched to on-device AI coach.'
+          : 'Cloud AI enabled — responses will be richer.');
+    }
+    controller.dispose();
+  }
+
+  void _showSnackBar(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 4)),
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // Build
+  // -------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final isRtl = L.isRtl;
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              const Icon(Icons.smart_toy, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'FitAI Coach',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${L.language.name} ${L.language.sttLocale != null ? "🎤" : ""}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            // TTS toggle.
+            IconButton(
+              icon: Icon(_ttsEnabled ? Icons.volume_up : Icons.volume_off),
+              tooltip: 'Text-to-speech',
+              onPressed: () {
+                setState(() => _ttsEnabled = !_ttsEnabled);
+                if (!_ttsEnabled) _stopSpeaking();
+              },
+            ),
+            // Cloud AI settings.
+            IconButton(
+              icon: Icon(
+                AICoachEngine.instance.hasCloud
+                    ? Icons.cloud_done
+                    : Icons.cloud_outlined,
+              ),
+              tooltip: 'AI Settings',
+              onPressed: _showApiKeyDialog,
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Voice status bar.
+            if (_voiceState != VoiceState.idle || _isThinking)
+              _buildStatusBar(),
+            // Chat messages.
+            Expanded(child: _buildMessageList()),
+            // Input bar.
+            _buildInputBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBar() {
+    String text;
+    Color color;
+    if (_voiceState == VoiceState.listening) {
+      text = '${L.t('listening')}... $_partialText';
+      color = Colors.red;
+    } else if (_isThinking) {
+      text = '${L.t('thinking')}...';
+      color = Colors.blue;
+    } else if (_voiceState == VoiceState.speaking) {
+      text = 'Speaking...';
+      color = Colors.green;
+    } else {
+      text = '';
+      color = Colors.grey;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: color.withValues(alpha: 0.1),
+      child: Row(
+        children: [
+          if (_isThinking || _voiceState == VoiceState.speaking)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              ),
+            ),
+          if (_voiceState == VoiceState.listening)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Icon(Icons.mic, color: color, size: 16),
+            ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: color, fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (_voiceState == VoiceState.speaking)
+            TextButton.icon(
+              onPressed: _stopSpeaking,
+              icon: const Icon(Icons.stop, size: 16),
+              label: const Text('Stop', style: TextStyle(fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageList() {
+    if (_messages.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'Ask me anything about fitness!',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: _messages.length,
+      itemBuilder: (ctx, i) => _buildMessageBubble(_messages[i]),
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage msg) {
+    final isUser = msg.isUser;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isUser
+              ? Colors.blue.shade600
+              : (msg.fromCloud ? Colors.green.shade50 : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(16).copyWith(
+            bottomRight: isUser ? const Radius.circular(4) : null,
+            bottomLeft: !isUser ? const Radius.circular(4) : null,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isUser && msg.fromCloud)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.cloud, size: 10, color: Colors.green.shade700),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Cloud AI',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!isUser && !msg.fromCloud && msg.personalized)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person, size: 10, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      'On-device • Personalized',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Text(
+              msg.text,
+              style: TextStyle(
+                color: isUser ? Colors.white : Colors.black87,
+                fontSize: 15,
+                height: 1.4,
+              ),
+            ),
+            if (!isUser && _ttsEnabled && !_isSpeaking)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: GestureDetector(
+                  onTap: () => _speakResponse(msg.text),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.volume_up, size: 12, color: Colors.blue.shade400),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Listen',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blue.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputBar() {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, -1),
+              blurRadius: 4,
+              color: Colors.black.withValues(alpha: 0.06),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Microphone button.
+            GestureDetector(
+              onTap: _toggleVoiceInput,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _voiceState == VoiceState.listening
+                      ? Colors.red
+                      : Colors.blue.shade600,
+                ),
+                child: Icon(
+                  _voiceState == VoiceState.listening
+                      ? Icons.mic
+                      : Icons.mic_none,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Text input.
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                textInputAction: TextInputAction.send,
+                textCapitalization: TextCapitalization.sentences,
+                textAlign: L.isRtl ? TextAlign.right : TextAlign.left,
+                decoration: InputDecoration(
+                  hintText: _partialText.isNotEmpty
+                      ? _partialText
+                      : L.t('askCoach'),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (text) => _sendMessage(text),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Send button.
+            IconButton.filled(
+              onPressed: _textController.text.trim().isNotEmpty
+                  ? () => _sendMessage(_textController.text)
+                  : null,
+              icon: const Icon(Icons.send, size: 20),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+==================== .\lib\features\nutrition_screen.dart ====================
+
+/// FitAI Nutrition Screen — Food Logging & Photo Analysis
+///
+/// Implements the food/nutrition feature described in the product
+/// documents. Users can:
+///   - log meals from a built-in food database (including Pakistani staples)
+///   - see daily calorie and macro totals vs their personalized target
+///   - capture a food photo for optional AI vision analysis
+///
+/// When no Gemini API key is configured, photo analysis is honest about
+/// being unavailable and directs the user to log manually. When a key
+/// is set, results are clearly marked as estimates, not exact values.
+library;
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../app/app_localizations.dart' show L;
+import '../core/food_data.dart';
+import '../core/user_profile_service.dart';
+
+class NutritionScreen extends StatefulWidget {
+  const NutritionScreen({super.key});
+
+  @override
+  State<NutritionScreen> createState() => _NutritionScreenState();
+}
+
+class _NutritionScreenState extends State<NutritionScreen> {
+  final NutritionService _nutrition = NutritionService.instance;
+  List<MealEntry> _todayMeals = [];
+  UserProfile? _profile;
+  int? _targetCalories;
+  bool _isLoading = true;
+
+  // Daily totals
+  double _consumedCalories = 0;
+  double _consumedProtein = 0;
+  double _consumedCarbs = 0;
+  double _consumedFat = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    _profile = await UserProfileService.instance.load();
+    _targetCalories = _nutrition.targetCalories(_profile!);
+    _todayMeals = await _nutrition.mealsForDay(DateTime.now());
+
+    final totals = await _nutrition.totalsForDay(DateTime.now());
+    setState(() {
+      _consumedCalories = totals['calories'] ?? 0;
+      _consumedProtein = totals['protein'] ?? 0;
+      _consumedCarbs = totals['carbs'] ?? 0;
+      _consumedFat = totals['fat'] ?? 0;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _isLoading = true);
+    await _loadData();
+  }
+
+  // -------------------------------------------------------------------
+  // Add meal via food search
+  // -------------------------------------------------------------------
+
+  Future<void> _showAddMealSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _AddMealSheet(
+        onAdded: (food, servings, mealType) async {
+          final entry = MealEntry(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            date: DateTime.now(),
+            mealType: mealType,
+            food: food,
+            servings: servings,
+          );
+          await _nutrition.addMeal(entry);
+          if (ctx.mounted) Navigator.pop(ctx);
+          _refresh();
+        },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // Photo analysis
+  // -------------------------------------------------------------------
+
+  Future<void> _captureAndAnalyze() async {
+    // Request camera permission.
+    final camStatus = await Permission.camera.request();
+    if (!camStatus.isGranted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Camera permission is needed to analyze food photos.')),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
+    if (photo == null) return;
+
+    final file = File(photo.path);
+    _showAnalysisDialog(file);
+  }
+
+  Future<void> _pickFromGallery() async {
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
+    if (photo == null) return;
+
+    final file = File(photo.path);
+    _showAnalysisDialog(file);
+  }
+
+  Future<void> _showAnalysisDialog(File image) async {
+    setState(() => _isLoading = true);
+
+    final analysis = await _nutrition.analyzePhoto(image);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Food Photo Analysis'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(image, height: 150, width: double.maxFinite,
+                    fit: BoxFit.cover),
+              ),
+              const SizedBox(height: 12),
+              Text(analysis.summary, style: const TextStyle(fontSize: 13)),
+              if (analysis.fromCloud && analysis.isEstimate)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'These are AI estimates, not exact values. '
+                          'Adjust serving sizes as needed.',
+                          style: TextStyle(fontSize: 11, color: Colors.orange.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (analysis.detectedItems.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text('Detected items:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 4),
+                ...analysis.detectedItems.map((item) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(item.name, style: const TextStyle(fontSize: 14)),
+                      subtitle: Text(
+                        '${item.calories} kcal • P${item.protein.toStringAsFixed(1)} '
+                        'C${item.carbs.toStringAsFixed(1)} F${item.fat.toStringAsFixed(1)}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      trailing: Text(item.serving, style: const TextStyle(fontSize: 12)),
+                      onTap: () {
+                        // Add this detected item to the log.
+                        final entry = MealEntry(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          date: DateTime.now(),
+                          mealType: _currentMealType(),
+                          food: item,
+                          servings: 1,
+                          photoPath: image.path,
+                          aiEstimated: true,
+                        );
+                        _nutrition.addMeal(entry);
+                        Navigator.pop(ctx);
+                        _refresh();
+                      },
+                    )),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          if (analysis.detectedItems.isEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showAddMealSheet();
+              },
+              child: const Text('Log Manually'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(L.t('close')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _currentMealType() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Breakfast';
+    if (hour < 15) return 'Lunch';
+    if (hour < 21) return 'Dinner';
+    return 'Snack';
+  }
+
+  // -------------------------------------------------------------------
+  // Remove meal
+  // -------------------------------------------------------------------
+
+  Future<void> _removeMeal(String id) async {
+    await _nutrition.removeMeal(id);
+    _refresh();
+  }
+
+  // -------------------------------------------------------------------
+  // Build
+  // -------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final target = _targetCalories;
+    final isRtl = L.isRtl;
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(L.t('nutritionLog'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.photo_camera),
+              tooltip: 'Analyze Food Photo',
+              onPressed: _captureAndAnalyze,
+            ),
+            IconButton(
+              icon: const Icon(Icons.photo_library),
+              tooltip: 'Pick from Gallery',
+              onPressed: _pickFromGallery,
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildSummaryCard(target),
+              const SizedBox(height: 16),
+              _buildMacroBreakdown(),
+              const SizedBox(height: 20),
+              _buildMealList(),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _showAddMealSheet,
+          icon: const Icon(Icons.add),
+          label: Text(L.t('addMeal')),
+        ),
+      ),

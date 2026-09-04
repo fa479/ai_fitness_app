@@ -1,15 +1,13 @@
-/// FitAI AI Form Check Screen — Real Camera Pose Detection
+/// FitAI Form Check — Live Camera Mirror + Posture/Form Feedback
 ///
-/// This screen fixes the broken AIFormCheckScreen from main.dart.
-/// It uses Google ML Kit Pose Detection on the live camera stream to:
+/// Uses Google ML Kit Pose Detection on the live camera stream to:
+///   - act as a real mirror (live CameraPreview)
 ///   - detect body landmarks in real time
 ///   - draw a skeleton overlay
-///   - compute joint angles
-///   - count reps with a state machine
-///   - give real form feedback
+///   - give real form/posture feedback
 ///
-/// Every number shown to the user comes from actual ML Kit landmark data.
-/// When no body is detected, the UI says so clearly — no fake results.
+/// NO rep counting, NO set counting, NO workout progression.
+/// This is purely a mirror + posture check tool.
 library;
 
 import 'dart:io';
@@ -26,17 +24,13 @@ import '../core/voice_service.dart';
 import '../app/app_localizations.dart' show L;
 
 class FormCheckScreen extends StatefulWidget {
-  final int targetSets;
-  final int targetRepsPerSet;
   final ExerciseType? initialExercise;
-  final void Function(int completedSets, int totalReps)? onExerciseCompleted;
+  final String? exerciseName;
 
   const FormCheckScreen({
     super.key,
-    this.targetSets = 3,
-    this.targetRepsPerSet = 10,
     this.initialExercise,
-    this.onExerciseCompleted,
+    this.exerciseName,
   });
 
   @override
@@ -68,34 +62,25 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
   PoseAnalysis _analysis = const PoseAnalysis();
 
   String _lastSpokenIssueKey = '';
-  int _lastSpokenRepCount = 0;
   bool _lastBodyDetected = false;
   DateTime _lastVoiceTime = DateTime.now();
 
   static const Duration _voiceCooldown = Duration(seconds: 5);
 
-  bool _setJustCompleteded = false;
-  bool _exerciseCompletionHandled = false;
+  int _processedFrameCount = 0;
+  static const int _warmUpFrames = 10;
 
   bool _isConfigured = false;
   late ExerciseType _selectedExercise;
-  late int _selectedSets;
-  late int _selectedReps;
 
   @override
   void initState() {
     super.initState();
     _selectedExercise = widget.initialExercise ?? ExerciseType.squat;
-    _selectedSets = widget.targetSets;
-    _selectedReps = widget.targetRepsPerSet;
   }
 
   void _startExercise() {
     _analyzer.setExercise(_selectedExercise);
-    _analyzer.configureSets(
-      targetSets: _selectedSets,
-      targetRepsPerSet: _selectedReps,
-    );
     setState(() => _isConfigured = true);
     _setupCamera();
   }
@@ -134,12 +119,12 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
         return;
       }
 
-      // Prefer back camera when the screen opens.
-      final backIndex = _cameras.indexWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
+      // Prefer front camera for mirror-like experience.
+      final frontIndex = _cameras.indexWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
       );
 
-      _currentCameraIndex = backIndex >= 0 ? backIndex : 0;
+      _currentCameraIndex = frontIndex >= 0 ? frontIndex : 0;
 
       await _initializeSelectedCamera();
     } catch (e) {
@@ -184,6 +169,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
 
     _latestPose = null;
     _analysis = const PoseAnalysis();
+    _processedFrameCount = 0;
 
     await _cameraController!.startImageStream(_onCameraImage);
 
@@ -218,8 +204,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
       _statusMessage = 'Switching camera...';
     });
 
-    _currentCameraIndex =
-        (_currentCameraIndex + 1) % _cameras.length;
+    _currentCameraIndex = (_currentCameraIndex + 1) % _cameras.length;
 
     try {
       await _initializeSelectedCamera();
@@ -279,40 +264,27 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
 
       final pose = poses.isNotEmpty ? poses.first : null;
 
-      // IMPORTANT:
-      // If no actual pose is detected, analyzer receives null.
-      // Therefore reps cannot increase without real pose data.
-      final prevCompletedSets = _analyzer.completedSets;
+      _processedFrameCount++;
+      final isWarmingUp = _processedFrameCount <= _warmUpFrames;
+
       final analysis = _analyzer.analyze(pose);
-      final setJustDone = _analyzer.completedSets > prevCompletedSets;
 
       if (!mounted) return;
 
       setState(() {
         _latestPose = pose;
-        _analysis = analysis;
-        _setJustCompleteded = setJustDone;
+        _analysis = isWarmingUp
+            ? const PoseAnalysis(
+                feedback: 'Detecting body position...',
+                bodyDetected: true,
+                personDetected: true,
+              )
+            : analysis;
       });
 
-      if (setJustDone) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _setJustCompleteded = false);
-        });
+      if (!isWarmingUp) {
+        _maybeSpeakFeedback(analysis);
       }
-
-      // Handle exercise completion.
-      if (_analyzer.exerciseCompleted && !_exerciseCompletionHandled) {
-        _exerciseCompletionHandled = true;
-        final totalSets = _analyzer.completedSets;
-        final totalReps = totalSets * widget.targetRepsPerSet;
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && widget.onExerciseCompleted != null) {
-            widget.onExerciseCompleted!(totalSets, totalReps);
-          }
-        });
-      }
-
-      _maybeSpeakFeedback(analysis);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Pose detection error: $e');
@@ -361,7 +333,6 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
 
       int index = 0;
 
-      // Y plane.
       for (int row = 0; row < height; row++) {
         final rowStart = row * yRowStride;
 
@@ -370,27 +341,21 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
         }
       }
 
-      // VU planes.
       for (int row = 0; row < height ~/ 2; row++) {
         final uStart = row * uRowStride;
         final vStart = row * vRowStride;
 
         for (int col = 0; col < width ~/ 2; col++) {
-          nv21[index++] =
-              vPlane.bytes[vStart + col * vPixelStride];
+          nv21[index++] = vPlane.bytes[vStart + col * vPixelStride];
 
-          nv21[index++] =
-              uPlane.bytes[uStart + col * uPixelStride];
+          nv21[index++] = uPlane.bytes[uStart + col * uPixelStride];
         }
       }
 
       return InputImage.fromBytes(
         bytes: nv21,
         metadata: InputImageMetadata(
-          size: ui.Size(
-            width.toDouble(),
-            height.toDouble(),
-          ),
+          size: ui.Size(width.toDouble(), height.toDouble()),
           rotation: _rotation,
           format: InputImageFormat.nv21,
           bytesPerRow: width,
@@ -415,10 +380,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
       return InputImage.fromBytes(
         bytes: Uint8List.fromList(plane.bytes),
         metadata: InputImageMetadata(
-          size: ui.Size(
-            width.toDouble(),
-            height.toDouble(),
-          ),
+          size: ui.Size(width.toDouble(), height.toDouble()),
           rotation: _rotation,
           format: InputImageFormat.bgra8888,
           bytesPerRow: plane.bytesPerRow,
@@ -434,14 +396,13 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
   }
 
   // ================================================================
-  // VOICE FEEDBACK
+  // VOICE FEEDBACK — posture/form only, no rep announcements
   // ================================================================
 
   void _maybeSpeakFeedback(PoseAnalysis analysis) {
     final now = DateTime.now();
 
     final currentIssue = analysis.formIssueKey;
-    final currentReps = analysis.reps;
     final bodyDetected = analysis.bodyDetected;
 
     String? toSpeak;
@@ -452,24 +413,18 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
       if (currentIssue.isNotEmpty) {
         toSpeak = L.t(currentIssue);
       }
-    } else if (currentIssue.isNotEmpty &&
-        currentIssue != _lastSpokenIssueKey) {
+    } else if (currentIssue.isNotEmpty && currentIssue != _lastSpokenIssueKey) {
       toSpeak = L.t(currentIssue);
-    } else if (currentIssue.isEmpty &&
-        _lastSpokenIssueKey.isNotEmpty) {
+    } else if (currentIssue.isEmpty && _lastSpokenIssueKey.isNotEmpty) {
       toSpeak = L.t('formGoodForm');
-    } else if (currentReps > _lastSpokenRepCount) {
-      toSpeak = '$currentReps ${L.t("reps")}';
     }
 
-    if (toSpeak != null &&
-        now.difference(_lastVoiceTime) > _voiceCooldown) {
+    if (toSpeak != null && now.difference(_lastVoiceTime) > _voiceCooldown) {
       _lastVoiceTime = now;
       VoiceService.instance.speak(toSpeak);
     }
 
     _lastSpokenIssueKey = currentIssue;
-    _lastSpokenRepCount = currentReps;
     _lastBodyDetected = bodyDetected;
   }
 
@@ -514,9 +469,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
       appBar: AppBar(
         title: Text(
           L.t('formCheck'),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           if (_isConfigured) ...[
@@ -552,21 +505,19 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
       ),
       body: _isConfigured
           ? (_isCameraReady &&
-                  _cameraController != null &&
-                  _cameraController!.value.isInitialized
-              ? _buildCameraView()
-              : _buildLoadingView())
+                    _cameraController != null &&
+                    _cameraController!.value.isInitialized
+                ? _buildCameraView()
+                : _buildLoadingView())
           : _buildConfigView(),
     );
   }
 
   // ================================================================
-  // CONFIGURATION VIEW
+  // CONFIGURATION VIEW — exercise selection only, no sets/reps
   // ================================================================
 
   Widget _buildConfigView() {
-    final isPlank = _selectedExercise == ExerciseType.plank;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -574,42 +525,51 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
         children: [
           const SizedBox(height: 16),
 
-          const Icon(
-            Icons.fitness_center,
-            size: 56,
-            color: Colors.blue,
-          ),
+          const Icon(Icons.camera_alt, size: 56, color: Colors.blue),
 
           const SizedBox(height: 16),
 
           Text(
             L.t('formCheck'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
+            'Live mirror with real-time posture and form feedback.\nNo rep or set counting — just check your form.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+
+          const SizedBox(height: 16),
+
+          if (widget.exerciseName != null)
+            Text(
+              widget.exerciseName!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue,
+              ),
+            ),
+
+          if (widget.exerciseName != null)
+            const SizedBox(height: 8),
+
+          Text(
             _selectedExercise.instruction,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
 
           const SizedBox(height: 32),
 
           Text(
             L.t('exercise'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
 
           const SizedBox(height: 8),
@@ -640,88 +600,6 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
             },
           ),
 
-          const SizedBox(height: 24),
-
-          Text(
-            L.t('sets'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Row(
-            children: [
-              IconButton(
-                onPressed: _selectedSets > 1
-                    ? () => setState(() => _selectedSets--)
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    '$_selectedSets',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _selectedSets < 10
-                    ? () => setState(() => _selectedSets++)
-                    : null,
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Text(
-            isPlank ? L.t('duration') : L.t('repsPerSet'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Row(
-            children: [
-              IconButton(
-                onPressed: _selectedReps > 1
-                    ? () => setState(() => _selectedReps--)
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    isPlank
-                        ? '${_selectedReps * 10}s'
-                        : '$_selectedReps',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _selectedReps < 50
-                    ? () => setState(() => _selectedReps++)
-                    : null,
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-            ],
-          ),
-
           const SizedBox(height: 32),
 
           SizedBox(
@@ -729,10 +607,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
             child: FilledButton.icon(
               onPressed: _startExercise,
               icon: const Icon(Icons.camera_alt),
-              label: Text(
-                L.t('start'),
-                style: const TextStyle(fontSize: 18),
-              ),
+              label: Text(L.t('start'), style: const TextStyle(fontSize: 18)),
             ),
           ),
 
@@ -767,9 +642,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
             Text(
               _statusMessage,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -778,7 +651,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
   }
 
   // ================================================================
-  // CAMERA VIEW
+  // CAMERA VIEW — live mirror + posture overlay
   // ================================================================
 
   Widget _buildCameraView() {
@@ -789,28 +662,18 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
         // Instruction banner.
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: Colors.blue.shade50,
           child: Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                size: 18,
-                color: Colors.blue.shade700,
-              ),
+              Icon(Icons.info_outline, size: 18, color: Colors.blue.shade700),
 
               const SizedBox(width: 8),
 
               Expanded(
                 child: Text(
                   _analyzer.exercise.instruction,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue.shade900,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
                 ),
               ),
             ],
@@ -824,10 +687,10 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Camera preview.
+                  // Camera preview (live mirror).
                   CameraPreview(controller),
 
-                  // Skeleton.
+                  // Skeleton overlay.
                   if (_latestPose != null)
                     CustomPaint(
                       painter: SkeletonPainter(
@@ -839,13 +702,12 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
                         ),
                         rotation: _rotation,
                         isFrontCamera:
-                            _cameras[_currentCameraIndex]
-                                    .lensDirection ==
-                                CameraLensDirection.front,
+                            _cameras[_currentCameraIndex].lensDirection ==
+                            CameraLensDirection.front,
                       ),
                     ),
 
-                  // Camera name.
+                  // Camera name badge.
                   Positioned(
                     top: 12,
                     left: 12,
@@ -880,23 +742,23 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
                     ),
                   ),
 
-                  // Info banner.
+                  // Form feedback banner.
                   Positioned(
                     top: 12,
                     left: 12,
                     right: 12,
                     child: Padding(
                       padding: const EdgeInsets.only(top: 48),
-                      child: _buildInfoBanner(),
+                      child: _buildFormFeedbackBanner(),
                     ),
                   ),
 
-                  // Bottom stats.
+                  // Bottom form status bar.
                   Positioned(
                     left: 12,
                     right: 12,
                     bottom: 12,
-                    child: _buildStatsBar(),
+                    child: _buildFormStatusBar(),
                   ),
                 ],
               );
@@ -914,39 +776,31 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
   ui.Size _rotatedSize() {
     if (_rotation == InputImageRotation.rotation90deg ||
         _rotation == InputImageRotation.rotation270deg) {
-      return ui.Size(
-        _imageHeight.toDouble(),
-        _imageWidth.toDouble(),
-      );
+      return ui.Size(_imageHeight.toDouble(), _imageWidth.toDouble());
     }
 
-    return ui.Size(
-      _imageWidth.toDouble(),
-      _imageHeight.toDouble(),
-    );
+    return ui.Size(_imageWidth.toDouble(), _imageHeight.toDouble());
   }
 
   // ================================================================
-  // INFO BANNER
+  // FORM FEEDBACK BANNER (replaces old info banner)
   // ================================================================
 
-  Widget _buildInfoBanner() {
+  Widget _buildFormFeedbackBanner() {
     final String headline;
     final String detail;
     final Color color;
 
-    if (!_analysis.bodyDetected) {
-      headline = 'No body detected';
-      detail = 'Step back and make sure your full body is visible.';
-      color = Colors.red;
-    } else if (_analysis.formIssueKey == 'squatReady') {
-      headline = L.t('squatReady');
-      detail = 'Stand tall and get ready.';
-      color = Colors.blue;
-    } else if (_analysis.formIssueKey == 'squatLowerSlowly') {
-      headline = L.t('squatLowerSlowly');
+    if (!_analysis.personDetected) {
+      headline = L.t('noBodyDetected');
       detail = '';
-      color = Colors.blue;
+      color = Colors.grey;
+    } else if (!_analysis.bodyDetected) {
+      headline = L.t('noBodyDetected');
+      detail = _analysis.feedback.isNotEmpty
+          ? _analysis.feedback
+          : 'Step back so your full body is visible.';
+      color = Colors.orange;
     } else if (_analysis.formIssueKey.isNotEmpty) {
       headline = L.t('formNeedsAdjustment');
       detail = L.t(_analysis.formIssueKey);
@@ -975,11 +829,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.fitness_center,
-                color: color,
-                size: 18,
-              ),
+              Icon(Icons.fitness_center, color: color, size: 18),
 
               const SizedBox(width: 6),
 
@@ -997,17 +847,9 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
               const Spacer(),
 
               if (_analysis.bodyDetected)
-                Icon(
-                  Icons.check_circle,
-                  color: color,
-                  size: 18,
-                )
+                Icon(Icons.check_circle, color: color, size: 18)
               else
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.red,
-                  size: 18,
-                ),
+                const Icon(Icons.error_outline, color: Colors.red, size: 18),
             ],
           ),
 
@@ -1026,10 +868,7 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
             const SizedBox(height: 2),
             Text(
               detail,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
         ],
@@ -1038,119 +877,58 @@ class _FormCheckScreenState extends State<FormCheckScreen> {
   }
 
   // ================================================================
-  // STATS BAR
+  // FORM STATUS BAR — posture only, no reps/sets
   // ================================================================
 
-  Widget _buildStatsBar() {
-    final setLabel = _analyzer.targetSets > 0
-        ? '${_analyzer.currentSet}/${_analyzer.targetSets}'
-        : '${_analyzer.currentSet}';
-
-    final repsLabel = _analyzer.targetRepsPerSet > 0
-        ? '${_analysis.reps}/${_analyzer.targetRepsPerSet}'
-        : '${_analysis.reps}';
-
+  Widget _buildFormStatusBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Set progress row.
-          Row(
-            children: [
-              Expanded(
-                child: _statItem(
-                  'Set',
-                  _analyzer.exerciseCompleted
-                      ? 'Done'
-                      : setLabel,
-                ),
-              ),
-              Expanded(
-                child: _statItem(
-                  'Reps',
-                  _analysis.bodyDetected ? repsLabel : '0',
-                ),
-              ),
-              Expanded(
-                child: _statItem(
-                  'Exercise',
-                  _analyzer.exercise.displayName,
-                ),
-              ),
-              Expanded(
-                child: _statItem(
-                  'Angle',
-                  _analysis.bodyDetected &&
-                          _analysis.primaryAngle > 0
-                      ? '${_analysis.primaryAngle.round()}\u00b0'
-                      : '--',
-                ),
-              ),
-            ],
+          Expanded(
+            child: _formStatItem(
+              L.t('exercise'),
+              _analyzer.exercise.displayName,
+            ),
           ),
-
-          const SizedBox(height: 6),
-
-          // Set completion indicator.
-          if (_setJustCompleteded && !_analyzer.exerciseCompleted)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Set ${_analyzer.completedSets} complete! Rest and start Set ${_analyzer.currentSet}.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          Expanded(
+            child: _formStatItem(
+              'Posture',
+              _analysis.bodyDetected
+                  ? (_analysis.formQuality == FormQuality.good
+                      ? 'Good'
+                      : _analysis.formQuality == FormQuality.warning
+                          ? 'Adjust'
+                          : _analysis.formQuality == FormQuality.poor
+                              ? 'Fix'
+                              : 'Checking')
+                  : 'No body',
             ),
-
-          if (_analyzer.exerciseCompleted)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'All ${_analyzer.completedSets} sets complete! Great work!',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.amberAccent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          ),
+          Expanded(
+            child: _formStatItem(
+              'Angle',
+              _analysis.bodyDetected && _analysis.primaryAngle > 0
+                  ? '${_analysis.primaryAngle.round()}\u00b0'
+                  : '--',
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _statItem(String label, String value) {
+  Widget _formStatItem(String label, String value) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
 
         const SizedBox(height: 4),
@@ -1193,10 +971,7 @@ class SkeletonPainter extends CustomPainter {
   ui.Size get _rotatedSize {
     if (rotation == InputImageRotation.rotation90deg ||
         rotation == InputImageRotation.rotation270deg) {
-      return ui.Size(
-        imageSize.height,
-        imageSize.width,
-      );
+      return ui.Size(imageSize.height, imageSize.width);
     }
 
     return imageSize;
@@ -1222,10 +997,7 @@ class SkeletonPainter extends CustomPainter {
       nx = 1.0 - nx;
     }
 
-    return Offset(
-      nx * previewSize.width,
-      ny * previewSize.height,
-    );
+    return Offset(nx * previewSize.width, ny * previewSize.height);
   }
 
   @override
@@ -1241,11 +1013,9 @@ class SkeletonPainter extends CustomPainter {
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    final goodPaint = Paint()
-      ..color = Colors.green;
+    final goodPaint = Paint()..color = Colors.green;
 
-    final lowPaint = Paint()
-      ..color = Colors.orange;
+    final lowPaint = Paint()..color = Colors.orange;
 
     // Draw bones.
     for (final connection in skeletonConnections) {
@@ -1263,11 +1033,7 @@ class SkeletonPainter extends CustomPainter {
         continue;
       }
 
-      canvas.drawLine(
-        pointA,
-        pointB,
-        linePaint,
-      );
+      canvas.drawLine(pointA, pointB, linePaint);
     }
 
     // Draw joints.
@@ -1278,23 +1044,14 @@ class SkeletonPainter extends CustomPainter {
         continue;
       }
 
-      final paint =
-          landmark.likelihood >= 0.7
-              ? goodPaint
-              : lowPaint;
+      final paint = landmark.likelihood >= 0.7 ? goodPaint : lowPaint;
 
-      canvas.drawCircle(
-        position,
-        5,
-        paint,
-      );
+      canvas.drawCircle(position, 5, paint);
     }
   }
 
   @override
-  bool shouldRepaint(
-    covariant SkeletonPainter oldDelegate,
-  ) {
+  bool shouldRepaint(covariant SkeletonPainter oldDelegate) {
     return pose != oldDelegate.pose ||
         isFrontCamera != oldDelegate.isFrontCamera ||
         imageSize != oldDelegate.imageSize ||
@@ -1308,76 +1065,22 @@ class SkeletonPainter extends CustomPainter {
 // ====================================================================
 
 const List<List<PoseLandmarkType>> skeletonConnections = [
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.rightShoulder,
-  ],
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftEar,
-  ],
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightEar,
-  ],
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftElbow,
-  ],
-  [
-    PoseLandmarkType.leftElbow,
-    PoseLandmarkType.leftWrist,
-  ],
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightElbow,
-  ],
-  [
-    PoseLandmarkType.rightElbow,
-    PoseLandmarkType.rightWrist,
-  ],
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftHip,
-  ],
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightHip,
-  ],
-  [
-    PoseLandmarkType.leftHip,
-    PoseLandmarkType.rightHip,
-  ],
-  [
-    PoseLandmarkType.leftHip,
-    PoseLandmarkType.leftKnee,
-  ],
-  [
-    PoseLandmarkType.leftKnee,
-    PoseLandmarkType.leftAnkle,
-  ],
-  [
-    PoseLandmarkType.leftAnkle,
-    PoseLandmarkType.leftHeel,
-  ],
-  [
-    PoseLandmarkType.leftHeel,
-    PoseLandmarkType.leftFootIndex,
-  ],
-  [
-    PoseLandmarkType.rightHip,
-    PoseLandmarkType.rightKnee,
-  ],
-  [
-    PoseLandmarkType.rightKnee,
-    PoseLandmarkType.rightAnkle,
-  ],
-  [
-    PoseLandmarkType.rightAnkle,
-    PoseLandmarkType.rightHeel,
-  ],
-  [
-    PoseLandmarkType.rightHeel,
-    PoseLandmarkType.rightFootIndex,
-  ],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftEar],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightEar],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+  [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+  [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+  [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+  [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+  [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+  [PoseLandmarkType.leftAnkle, PoseLandmarkType.leftHeel],
+  [PoseLandmarkType.leftHeel, PoseLandmarkType.leftFootIndex],
+  [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+  [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+  [PoseLandmarkType.rightAnkle, PoseLandmarkType.rightHeel],
+  [PoseLandmarkType.rightHeel, PoseLandmarkType.rightFootIndex],
 ];

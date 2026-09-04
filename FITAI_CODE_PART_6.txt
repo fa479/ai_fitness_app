@@ -1,0 +1,2655 @@
+    );
+  }
+
+  Widget _buildSummaryCard(int? target) {
+    final consumed = _consumedCalories.round();
+    final remaining = (target ?? 0) - consumed;
+    final progress = target != null && target > 0
+        ? (consumed / target).clamp(0.0, 1.5)
+        : 0.0;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text(
+              L.t('dailyTarget'),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '$consumed',
+                  style: const TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  target != null ? ' / $target ${L.t('calories')}' : ' ${L.t('calories')}',
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 8,
+                backgroundColor: Colors.grey.shade200,
+                color: progress > 1.0
+                    ? Colors.red
+                    : (progress > 0.85 ? Colors.orange : Colors.green),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (target != null)
+              Text(
+                remaining >= 0
+                    ? '$remaining ${L.t('calories')} ${L.t('remaining')}'
+                    : '${remaining.abs()} ${L.t('calories')} ${L.t('overTarget')}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: remaining >= 0 ? Colors.green.shade700 : Colors.red,
+                ),
+              )
+            else
+              Text(
+                L.t('setWeightHeight'),
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
+                textAlign: TextAlign.center,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMacroBreakdown() {
+    return Row(
+      children: [
+        _macroChip(L.t('protein'), _consumedProtein, Colors.blue),
+        const SizedBox(width: 8),
+        _macroChip(L.t('carbs'), _consumedCarbs, Colors.amber),
+        const SizedBox(width: 8),
+        _macroChip(L.t('fat'), _consumedFat, Colors.purple),
+      ],
+    );
+  }
+
+  Widget _macroChip(String label, double grams, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Text(label,
+                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text('${grams.round()}g',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMealList() {
+    if (_todayMeals.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Icons.restaurant_outlined, size: 48, color: Colors.grey.shade300),
+              const SizedBox(height: 12),
+              Text(
+                '${L.t('noMealsLogged')}\n${L.t('tapToAdd')}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Group by meal type.
+    final groups = <String, List<MealEntry>>{};
+    for (final m in _todayMeals) {
+      groups.putIfAbsent(m.mealType, () => []).add(m);
+    }
+    final orderedTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final type in orderedTypes)
+          if (groups[type] != null && groups[type]!.isNotEmpty) ...[
+            _buildMealTypeHeader(type, groups[type]!),
+            ...groups[type]!.map((m) => _buildMealTile(m)),
+          ],
+        // Any other meal types not in the standard list.
+        for (final type in groups.keys)
+          if (!orderedTypes.contains(type)) ...[
+            _buildMealTypeHeader(type, groups[type]!),
+            ...groups[type]!.map((m) => _buildMealTile(m)),
+          ],
+      ],
+    );
+  }
+
+  Widget _buildMealTypeHeader(String type, List<MealEntry> meals) {
+    final typeCalories = meals.fold<int>(0, (sum, m) => sum + m.totalCalories);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Row(
+        children: [
+          Text(type, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(width: 8),
+          Text('$typeCalories kcal', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealTile(MealEntry meal) {
+    return Dismissible(
+      key: ValueKey(meal.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) => _removeMeal(meal.id),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: ListTile(
+          leading: meal.photoPath != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.file(File(meal.photoPath!),
+                      width: 40, height: 40, fit: BoxFit.cover),
+                )
+              : CircleAvatar(
+                  backgroundColor: Colors.blue.shade50,
+                  child: Icon(Icons.restaurant, size: 18, color: Colors.blue.shade700),
+                ),
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(meal.food.name,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              if (meal.aiEstimated == true)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(Icons.auto_awesome, size: 12, color: Colors.orange.shade400),
+                ),
+            ],
+          ),
+          subtitle: Text(
+            '${meal.servings}× ${meal.food.serving} • ${meal.totalCalories} kcal • '
+            'P${meal.totalProtein.toStringAsFixed(0)} C${meal.totalCarbs.toStringAsFixed(0)} '
+            'F${meal.totalFat.toStringAsFixed(0)}',
+            style: const TextStyle(fontSize: 11),
+          ),
+          trailing: Text('${meal.totalCalories} kcal',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------
+// Add Meal Bottom Sheet — searchable food list + serving selector
+// ---------------------------------------------------------------------
+
+class _AddMealSheet extends StatefulWidget {
+  final void Function(FoodItem food, double servings, String mealType) onAdded;
+
+  const _AddMealSheet({required this.onAdded});
+
+  @override
+  State<_AddMealSheet> createState() => _AddMealSheetState();
+}
+
+class _AddMealSheetState extends State<_AddMealSheet> {
+  final _searchController = TextEditingController();
+  final _servingsController = TextEditingController(text: '1');
+  List<FoodItem> _results = FoodDatabase.items;
+  FoodItem? _selected;
+  String _mealType = 'Breakfast';
+
+  @override
+  void initState() {
+    super.initState();
+    final hour = DateTime.now().hour;
+    if (hour < 11) {
+      _mealType = 'Breakfast';
+    } else if (hour < 15) {
+      _mealType = 'Lunch';
+    } else if (hour < 21) {
+      _mealType = 'Dinner';
+    } else {
+      _mealType = 'Snack';
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _servingsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(L.t('logFood'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search food (e.g. roti, chicken, rice...)',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (q) {
+                setState(() {
+                  _results = FoodDatabase.search(q);
+                  _selected = null;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            if (_selected == null)
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (ctx, i) {
+                    final food = _results[i];
+                    return ListTile(
+                      title: Text(food.name, style: const TextStyle(fontSize: 14)),
+                      subtitle: Text(
+                        '${food.serving} • ${food.calories} kcal • '
+                        'P${food.protein.toStringAsFixed(1)} '
+                        'C${food.carbs.toStringAsFixed(1)} '
+                        'F${food.fat.toStringAsFixed(1)}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      onTap: () => setState(() => _selected = food),
+                    );
+                  },
+                ),
+              )
+            else
+              _buildSelectedFood(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedFood() {
+    final food = _selected!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(food.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${food.serving} • ${food.calories} kcal',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => setState(() => _selected = null),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Meal type selector
+        const Text('Meal:', style: TextStyle(fontSize: 13)),
+        Wrap(
+          spacing: 8,
+          children: ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) {
+            return ChoiceChip(
+              label: Text(type),
+              selected: _mealType == type,
+              onSelected: (_) => setState(() => _mealType = type),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        // Servings
+        TextField(
+          controller: _servingsController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Servings',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Save button
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {
+              final servings = double.tryParse(_servingsController.text) ?? 1;
+              widget.onAdded(food, servings, _mealType);
+            },
+            icon: const Icon(Icons.check),
+            label: Text(L.t('save')),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+==================== .\lib\features\workout_plan_screen.dart ====================
+
+/// FitAI Workout Plan Screen
+///
+/// Personalized workout and daily routine planner. Allows users to:
+/// - View and edit their daily routine
+/// - Get AI analysis of routine issues
+/// - Generate next-day personalized workout plans
+/// - View completed and upcoming plans
+library;
+
+import 'package:flutter/material.dart';
+
+import '../app/app_localizations.dart' show L;
+import '../core/food_data.dart';
+import '../core/user_profile_service.dart';
+import '../core/workout_planner_engine.dart';
+
+class WorkoutPlanScreen extends StatefulWidget {
+  const WorkoutPlanScreen({super.key});
+
+  @override
+  State<WorkoutPlanScreen> createState() => _WorkoutPlanScreenState();
+}
+
+class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
+  final WorkoutPlannerEngine _engine = WorkoutPlannerEngine.instance;
+  final UserProfileService _profileService = UserProfileService.instance;
+
+  UserProfile _profile = const UserProfile();
+  UserRoutine _routine = const UserRoutine();
+  List<DailyPlan> _plans = [];
+  RoutineAnalysis? _analysis;
+
+  bool _isLoading = true;
+  bool _isAnalyzing = false;
+  bool _isGenerating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    _profile = await _profileService.load();
+    _routine = await _engine.loadRoutine();
+    _plans = await _engine.loadPlans();
+
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _analyzeRoutine() async {
+    setState(() => _isAnalyzing = true);
+
+    _analysis = await _engine.analyzeRoutine(_routine, _profile);
+
+    setState(() => _isAnalyzing = false);
+  }
+
+  Future<void> _generateNextDayPlan() async {
+    if (!_profile.isComplete) {
+      _showProfileIncompleteDialog();
+      return;
+    }
+
+    setState(() => _isGenerating = true);
+
+    final plan = await _engine.generateNextDayPlan(_profile, _routine);
+    await _engine.addPlan(plan);
+    _plans = await _engine.loadPlans();
+
+    setState(() => _isGenerating = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(L.t('planGenerated')),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _showProfileIncompleteDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(L.t('profileIncomplete')),
+        content: Text(L.t('profileIncompleteMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(L.t('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editRoutine() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditRoutineScreen(
+          routine: _routine,
+          onSave: (routine) async {
+            await _engine.saveRoutine(routine);
+            await _loadData();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _viewPlan(DailyPlan plan) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlanDetailView(plan: plan),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(L.t('myWorkoutPlan')),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileSummary(),
+          const SizedBox(height: 20),
+          _buildRoutineSection(),
+          const SizedBox(height: 20),
+          _buildPlansSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileSummary() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            L.t('yourProfile'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_profile.isComplete) ...[
+            _profileRow(L.t('goal'), _profile.goal),
+            _profileRow(L.t('experience'), _profile.experience),
+            _profileRow(L.t('equipment'), _profile.equipment),
+            _profileRow(
+              L.t('availability'),
+              '${_profile.daysPerWeek} ${L.t("daysPerWeek")}, ${_profile.minutesPerSession} ${L.t("minutes")}',
+            ),
+          ] else
+            Text(
+              L.t('profileNotSet'),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoutineSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                L.t('dailyRoutine'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: _editRoutine,
+                tooltip: L.t('editRoutine'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_routine.isEmpty)
+            Text(
+              L.t('noRoutineSet'),
+              style: TextStyle(color: Colors.grey.shade600),
+            )
+          else ...[
+            if (_routine.wakeTime.isNotEmpty)
+              _routineRow(L.t('wakeTime'), _routine.wakeTime),
+            if (_routine.sleepTime.isNotEmpty)
+              _routineRow(L.t('sleepTime'), _routine.sleepTime),
+            if (_routine.workSchedule.isNotEmpty)
+              _routineRow(L.t('workSchedule'), _routine.workSchedule),
+            if (_routine.workoutTimePreference.isNotEmpty)
+              _routineRow(
+                  L.t('workoutTime'), _routine.workoutTimePreference),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: _isAnalyzing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.analytics),
+                  label: Text(L.t('analyzeRoutine')),
+                  onPressed: _isAnalyzing ? null : _analyzeRoutine,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: _isGenerating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add),
+                  label: Text(L.t('createNextDayPlan')),
+                  onPressed: _isGenerating ? null : _generateNextDayPlan,
+                ),
+              ),
+            ],
+          ),
+          if (_analysis != null) ...[
+            const SizedBox(height: 16),
+            _buildAnalysisCard(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _routineRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics, color: colorScheme.primary, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  L.t('routineAnalysis'),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              if (_analysis!.isAiGenerated)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'AI',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    L.t('appGenerated'),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_analysis!.issues.isNotEmpty) ...[
+            Text(
+              L.t('issuesFound'),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ..._analysis!.issues.asMap().entries.map((entry) {
+              final index = entry.key;
+              final issue = entry.value;
+              return _buildIssueCard(issue, index + 1, colorScheme);
+            }),
+            const SizedBox(height: 12),
+          ],
+          if (_analysis!.suggestions.isNotEmpty) ...[
+            Text(
+              L.t('suggestions'),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ..._analysis!.suggestions.map((suggestion) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ',
+                          style: TextStyle(color: colorScheme.primary)),
+                      Expanded(
+                        child: Text(
+                          suggestion,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIssueCard(
+      RoutineIssue issue, int number, ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '#$number',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.warning_amber_rounded,
+                  size: 16, color: Colors.orange.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${L.t("problem")}: ${issue.problem}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.tips_and_updates_outlined,
+                  size: 16, color: Colors.green.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${L.t("correction")}: ${issue.correction}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline,
+                  size: 16, color: colorScheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${L.t("reason")}: ${issue.reason}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlansSection() {
+    final today = DateTime.now();
+    final upcomingPlans =
+        _plans.where((p) => p.date.isAfter(today.subtract(const Duration(days: 1)))).toList();
+    final pastPlans =
+        _plans.where((p) => p.date.isBefore(today.subtract(const Duration(days: 1)))).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          L.t('upcomingPlans'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (upcomingPlans.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              L.t('noUpcomingPlans'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          )
+        else
+          ...upcomingPlans.map((plan) => _buildPlanCard(plan)),
+        const SizedBox(height: 20),
+        if (pastPlans.isNotEmpty) ...[
+          Text(
+            L.t('pastWorkouts'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...pastPlans.take(5).map((plan) => _buildPlanCard(plan)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPlanCard(DailyPlan plan) {
+    final isToday = plan.date.year == DateTime.now().year &&
+        plan.date.month == DateTime.now().month &&
+        plan.date.day == DateTime.now().day;
+
+    final isTomorrow = plan.date.year == DateTime.now().add(const Duration(days: 1)).year &&
+        plan.date.month == DateTime.now().add(const Duration(days: 1)).month &&
+        plan.date.day == DateTime.now().add(const Duration(days: 1)).day;
+
+    String dateLabel;
+    if (isToday) {
+      dateLabel = L.t('today');
+    } else if (isTomorrow) {
+      dateLabel = L.t('tomorrow');
+    } else {
+      dateLabel =
+          '${plan.date.day}/${plan.date.month}/${plan.date.year}';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor:
+              plan.completed ? Colors.green : Colors.deepPurple,
+          child: Icon(
+            plan.completed ? Icons.check : Icons.fitness_center,
+            color: Colors.white,
+          ),
+        ),
+        title: Text(dateLabel),
+        subtitle: Text(
+          '${plan.exercises.length} ${L.t("exercises")}',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _viewPlan(plan),
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------------
+// EDIT ROUTINE SCREEN
+// -------------------------------------------------------------------
+
+class EditRoutineScreen extends StatefulWidget {
+  final UserRoutine routine;
+  final Future<void> Function(UserRoutine) onSave;
+
+  const EditRoutineScreen({
+    super.key,
+    required this.routine,
+    required this.onSave,
+  });
+
+  @override
+  State<EditRoutineScreen> createState() => _EditRoutineScreenState();
+}
+
+class _EditRoutineScreenState extends State<EditRoutineScreen> {
+  late TextEditingController _wakeTimeController;
+  late TextEditingController _sleepTimeController;
+  late TextEditingController _workScheduleController;
+  late TextEditingController _mealTimesController;
+  late TextEditingController _freeTimeController;
+  late TextEditingController _workoutTimeController;
+  late TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _wakeTimeController = TextEditingController(text: widget.routine.wakeTime);
+    _sleepTimeController = TextEditingController(text: widget.routine.sleepTime);
+    _workScheduleController =
+        TextEditingController(text: widget.routine.workSchedule);
+    _mealTimesController = TextEditingController(text: widget.routine.mealTimes);
+    _freeTimeController = TextEditingController(text: widget.routine.freeTime);
+    _workoutTimeController =
+        TextEditingController(text: widget.routine.workoutTimePreference);
+    _notesController = TextEditingController(text: widget.routine.notes);
+  }
+
+  @override
+  void dispose() {
+    _wakeTimeController.dispose();
+    _sleepTimeController.dispose();
+    _workScheduleController.dispose();
+    _mealTimesController.dispose();
+    _freeTimeController.dispose();
+    _workoutTimeController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final routine = UserRoutine(
+      wakeTime: _wakeTimeController.text,
+      sleepTime: _sleepTimeController.text,
+      workSchedule: _workScheduleController.text,
+      mealTimes: _mealTimesController.text,
+      freeTime: _freeTimeController.text,
+      workoutTimePreference: _workoutTimeController.text,
+      notes: _notesController.text,
+    );
+
+    await widget.onSave(routine);
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(L.t('editRoutine')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _save,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              L.t('editRoutineDescription'),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _wakeTimeController,
+              label: L.t('wakeTime'),
+              hint: L.t('wakeTimeHint'),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _sleepTimeController,
+              label: L.t('sleepTime'),
+              hint: L.t('sleepTimeHint'),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _workScheduleController,
+              label: L.t('workSchedule'),
+              hint: L.t('workScheduleHint'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _mealTimesController,
+              label: L.t('mealTimes'),
+              hint: L.t('mealTimesHint'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _freeTimeController,
+              label: L.t('freeTime'),
+              hint: L.t('freeTimeHint'),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _workoutTimeController,
+              label: L.t('workoutTime'),
+              hint: L.t('workoutTimeHint'),
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              controller: _notesController,
+              label: L.t('notes'),
+              hint: L.t('notesHint'),
+              maxLines: 4,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _save,
+                child: Text(L.t('saveRoutine')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------------
+// PLAN DETAIL VIEW
+// -------------------------------------------------------------------
+
+class PlanDetailView extends StatefulWidget {
+  final DailyPlan plan;
+
+  const PlanDetailView({super.key, required this.plan});
+
+  @override
+  State<PlanDetailView> createState() => _PlanDetailViewState();
+}
+
+class _PlanDetailViewState extends State<PlanDetailView> {
+  DailyPlan get plan => widget.plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel =
+        '${plan.date.day}/${plan.date.month}/${plan.date.year}';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(dateLabel),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (plan.completed)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Text(
+                      L.t('workoutCompleted'),
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            _buildSection(
+              L.t('warmup'),
+              plan.warmup,
+              Icons.wb_sunny,
+              Colors.orange,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              L.t('exercises'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...plan.exercises.map((exercise) => _buildExerciseCard(exercise)),
+            if (plan.meals.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                L.t('mealSuggestions'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...plan.meals.map((meal) => _buildMealCard(meal)),
+            ],
+            const SizedBox(height: 16),
+            _buildSection(
+              L.t('cooldown'),
+              plan.cooldown,
+              Icons.bedtime,
+              Colors.blue,
+            ),
+            if (plan.notes.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildSection(
+                L.t('notes'),
+                plan.notes,
+                Icons.note,
+                Colors.grey,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, String content, IconData icon, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(content),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseCard(PlannedExercise exercise) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    exercise.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    exercise.muscleGroup,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildStat(
+                  Icons.format_list_numbered,
+                  '${exercise.sets} ${L.t("sets")}',
+                ),
+                const SizedBox(width: 16),
+                _buildStat(
+                  Icons.repeat,
+                  '${exercise.reps} ${L.t("reps")}',
+                ),
+                const SizedBox(width: 16),
+                _buildStat(
+                  Icons.timer,
+                  '${exercise.restSeconds}s ${L.t("rest")}',
+                ),
+              ],
+            ),
+            if (exercise.instructions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                exercise.instructions,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStat(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMealCard(PlannedMeal meal) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    meal.foodName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    meal.mealType,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildStat(
+                  Icons.local_fire_department,
+                  '${meal.calories} kcal',
+                ),
+                const SizedBox(width: 16),
+                _buildStat(
+                  Icons.fitness_center,
+                  '${meal.protein.toStringAsFixed(1)}g protein',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${L.t("serving")}: ${meal.serving}',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.swap_horiz, size: 18),
+                label: Text(L.t('findAlternative')),
+                onPressed: () => _showFoodAlternative(meal),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showFoodAlternative(PlannedMeal currentMeal) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(L.t('findAlternative')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${L.t("currentFood")}: ${currentMeal.foodName}'),
+            const SizedBox(height: 16),
+            Text(L.t('whyAlternative')),
+            const SizedBox(height: 8),
+            _buildReasonOption(L.t('dontLikeIt')),
+            _buildReasonOption(L.t('notAvailable')),
+            _buildReasonOption(L.t('vegetarian')),
+            _buildReasonOption(L.t('allergy')),
+            _buildReasonOption(L.t('other')),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(L.t('cancel')),
+          ),
+        ],
+      ),
+    );
+
+    if (reason == null || !mounted) return;
+
+    // Find alternative from food database
+    final alternative = await _findFoodAlternative(currentMeal, reason);
+    
+    if (!mounted) return;
+
+    if (alternative != null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(L.t('alternativeFound')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${L.t("original")}: ${currentMeal.foodName}'),
+              const SizedBox(height: 8),
+              Text('${L.t("alternative")}: ${alternative.name}'),
+              const SizedBox(height: 8),
+              Text('${L.t("serving")}: ${alternative.serving}'),
+              const SizedBox(height: 8),
+              Text('${alternative.calories} kcal | ${alternative.protein.toStringAsFixed(1)}g protein'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(L.t('ok')),
+            ),
+          ],
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(L.t('noAlternativeFound')),
+          content: Text(L.t('noSuitableAlternative')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(L.t('ok')),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildReasonOption(String reason) {
+    return InkWell(
+      onTap: () => Navigator.pop(context, reason),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(reason),
+      ),
+    );
+  }
+
+  Future<FoodItem?> _findFoodAlternative(PlannedMeal currentMeal, String reason) async {
+    // Search in FoodDatabase for similar items
+    final allFoods = FoodDatabase.items;
+    
+    // Filter based on reason
+    List<FoodItem> candidates = [];
+    
+    if (reason == L.t('vegetarian')) {
+      // Filter for vegetarian options
+      candidates = allFoods.where((food) {
+        final name = food.name.toLowerCase();
+        return !name.contains('chicken') && 
+               !name.contains('fish') && 
+               !name.contains('meat') &&
+               !name.contains('egg');
+      }).toList();
+    } else if (reason == L.t('allergy')) {
+      // For allergies, we can't safely recommend without knowing the specific allergy
+      // Return null to indicate we can't safely recommend
+      return null;
+    } else {
+      // For other reasons, find similar foods by calories and macros
+      candidates = allFoods.where((food) {
+        final calorieDiff = (food.calories - currentMeal.calories).abs();
+        return calorieDiff < 100; // Within 100 calories
+      }).toList();
+    }
+    
+    if (candidates.isEmpty) return null;
+    
+    // Find the closest match by calories
+    candidates.sort((a, b) {
+      final diffA = (a.calories - currentMeal.calories).abs();
+      final diffB = (b.calories - currentMeal.calories).abs();
+      return diffA.compareTo(diffB);
+    });
+    
+    // Return the closest match that's not the same food
+    for (final candidate in candidates) {
+      if (candidate.name.toLowerCase() != currentMeal.foodName.toLowerCase()) {
+        return candidate;
+      }
+    }
+    
+    return candidates.first;
+  }
+}
+
+==================== .\lib\exercise_library.dart ====================
+
+/// FitAI Exercise Library
+///
+/// Central exercise catalogue used by the workout planner and workout UI.
+/// Includes general fitness exercises and a dedicated Women's Wellness
+/// collection.
+///
+/// IMPORTANT:
+/// Being present in this library does NOT automatically mean an exercise
+/// supports live camera rep counting. Camera-supported exercises are marked
+/// explicitly with [cameraSupported].
+
+library;
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+enum ExerciseCategory {
+  strength,
+  cardio,
+  core,
+  mobility,
+  flexibility,
+  balance,
+  upperBody,
+  lowerBody,
+  fullBody,
+  womensWellness,
+}
+
+enum ExerciseDifficulty {
+  beginner,
+  intermediate,
+  advanced,
+}
+
+class LibraryExercise {
+  final String id;
+  final String name;
+  final String description;
+  final String muscleGroup;
+  final ExerciseCategory category;
+  final ExerciseDifficulty difficulty;
+
+  /// Whether the current ML Kit pose analyzer can actually count this
+  /// exercise using the live camera.
+  final bool cameraSupported;
+
+  /// The ExerciseType name used by pose_analyzer.dart when supported.
+  /// Null means there is currently no live-camera implementation.
+  final String? poseExerciseType;
+
+  final int defaultSets;
+  final int defaultReps;
+  final int defaultRestSeconds;
+  final String instructions;
+
+  /// True for exercises specifically intended for the Women's Wellness
+  /// section of the library.
+  final bool womensWellness;
+
+  const LibraryExercise({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.muscleGroup,
+    required this.category,
+    required this.difficulty,
+    required this.cameraSupported,
+    required this.poseExerciseType,
+    required this.defaultSets,
+    required this.defaultReps,
+    required this.defaultRestSeconds,
+    required this.instructions,
+    required this.womensWellness,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'muscleGroup': muscleGroup,
+      'category': category.name,
+      'difficulty': difficulty.name,
+      'cameraSupported': cameraSupported,
+      'poseExerciseType': poseExerciseType,
+      'defaultSets': defaultSets,
+      'defaultReps': defaultReps,
+      'defaultRestSeconds': defaultRestSeconds,
+      'instructions': instructions,
+      'womensWellness': womensWellness,
+    };
+  }
+
+  factory LibraryExercise.fromJson(Map<String, dynamic> json) {
+    ExerciseCategory parseCategory(String? value) {
+      return ExerciseCategory.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => ExerciseCategory.fullBody,
+      );
+    }
+
+    ExerciseDifficulty parseDifficulty(String? value) {
+      return ExerciseDifficulty.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => ExerciseDifficulty.beginner,
+      );
+    }
+
+    return LibraryExercise(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      muscleGroup: json['muscleGroup'] as String? ?? '',
+      category: parseCategory(json['category'] as String?),
+      difficulty: parseDifficulty(json['difficulty'] as String?),
+      cameraSupported: json['cameraSupported'] as bool? ?? false,
+      poseExerciseType: json['poseExerciseType'] as String?,
+      defaultSets: (json['defaultSets'] as num?)?.toInt() ?? 3,
+      defaultReps: (json['defaultReps'] as num?)?.toInt() ?? 10,
+      defaultRestSeconds:
+          (json['defaultRestSeconds'] as num?)?.toInt() ?? 60,
+      instructions: json['instructions'] as String? ?? '',
+      womensWellness: json['womensWellness'] as bool? ?? false,
+    );
+  }
+}
+
+// ============================================================================
+// EXERCISE LIBRARY
+// ============================================================================
+
+class ExerciseLibrary {
+  ExerciseLibrary._();
+
+  static final ExerciseLibrary instance = ExerciseLibrary._();
+
+  // --------------------------------------------------------------------------
+  // GENERAL FITNESS EXERCISES
+  // --------------------------------------------------------------------------
+
+  static const List<LibraryExercise> generalExercises = [
+    // =========================
+    // CAMERA SUPPORTED
+    // =========================
+
+    LibraryExercise(
+      id: 'squat',
+      name: 'Squat',
+      description: 'Bodyweight squat with controlled depth and standing phase.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'squat',
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Stand tall, lower with control, keep your chest up, then stand tall.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'pushup',
+      name: 'Push-up',
+      description: 'Upper-body pushing exercise using bodyweight.',
+      muscleGroup: 'Chest, Shoulders & Triceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'pushup',
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Keep your body aligned and lower and raise yourself with control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'bicep_curl',
+      name: 'Bicep Curl',
+      description: 'Controlled arm curl targeting the biceps.',
+      muscleGroup: 'Biceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'bicepCurl',
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Keep elbows close to your body and curl with controlled movement.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'shoulder_press',
+      name: 'Shoulder Press',
+      description: 'Pressing movement for the shoulders and upper body.',
+      muscleGroup: 'Shoulders',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'shoulderPress',
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Keep your core stable and press upward without rushing.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'lunge',
+      name: 'Lunge',
+      description: 'Single-leg lower-body movement.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'lunge',
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Step forward, lower with control, then return to the starting position.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'jumping_jack',
+      name: 'Jumping Jack',
+      description: 'Full-body cardio movement.',
+      muscleGroup: 'Full Body',
+      category: ExerciseCategory.cardio,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'jumpingJack',
+      defaultSets: 3,
+      defaultReps: 20,
+      defaultRestSeconds: 45,
+      instructions:
+          'Move arms and legs rhythmically while maintaining controlled landings.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'plank',
+      name: 'Plank',
+      description: 'Isometric core exercise.',
+      muscleGroup: 'Core',
+      category: ExerciseCategory.core,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'plank',
+      defaultSets: 3,
+      defaultReps: 30,
+      defaultRestSeconds: 45,
+      instructions:
+          'Keep your body aligned and brace your core while holding the position.',
+      womensWellness: false,
+    ),
+
+    // =========================
+    // LOWER BODY
+    // =========================
+
+    LibraryExercise(
+      id: 'glute_bridge',
+      name: 'Glute Bridge',
+      description: 'Floor-based exercise targeting the glutes and hips.',
+      muscleGroup: 'Glutes & Hips',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 45,
+      instructions:
+          'Lie on your back, bend your knees, lift your hips with control, then lower.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'calf_raise',
+      name: 'Calf Raise',
+      description: 'Standing exercise for the calf muscles.',
+      muscleGroup: 'Calves',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 15,
+      defaultRestSeconds: 45,
+      instructions:
+          'Rise onto the balls of your feet and lower slowly.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'wall_sit',
+      name: 'Wall Sit',
+      description: 'Isometric lower-body exercise.',
+      muscleGroup: 'Quads & Glutes',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 30,
+      defaultRestSeconds: 60,
+      instructions:
+          'Lean against a wall and hold a comfortable seated position.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'step_up',
+      name: 'Step-up',
+      description: 'Alternating step movement targeting the legs.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Step onto a stable platform and return with control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'sumo_squat',
+      name: 'Sumo Squat',
+      description: 'Wide-stance squat variation.',
+      muscleGroup: 'Glutes, Quads & Inner Thighs',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use a comfortable wide stance and lower while keeping your chest upright.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'reverse_lunge',
+      name: 'Reverse Lunge',
+      description: 'Controlled backward lunge variation.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.lowerBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Step backward, lower under control, then return to standing.',
+      womensWellness: false,
+    ),
+
+    // =========================
+    // UPPER BODY
+    // =========================
+
+    LibraryExercise(
+      id: 'tricep_dip',
+      name: 'Tricep Dip',
+      description: 'Bodyweight pushing movement for the back of the arms.',
+      muscleGroup: 'Triceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.intermediate,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 8,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use a stable surface and lower and raise yourself with control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'incline_pushup',
+      name: 'Incline Push-up',
+      description: 'Beginner-friendly push-up variation using an elevated surface.',
+      muscleGroup: 'Chest & Triceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Keep your body straight and lower your chest toward the stable surface.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'chest_press',
+      name: 'Chest Press',
+      description: 'Resistance exercise for the chest.',
+      muscleGroup: 'Chest & Triceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Press the resistance away from your body with controlled movement.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'lateral_raise',
+      name: 'Lateral Raise',
+      description: 'Shoulder isolation movement.',
+      muscleGroup: 'Shoulders',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 45,
+      instructions:
+          'Raise your arms to a comfortable height without swinging.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'front_raise',
+      name: 'Front Raise',
+      description: 'Controlled shoulder exercise.',
+      muscleGroup: 'Front Shoulders',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 45,
+      instructions:
+          'Lift your arms forward smoothly and lower them under control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'bent_over_row',
+      name: 'Bent-over Row',
+      description: 'Back-focused pulling movement.',
+      muscleGroup: 'Back & Biceps',
+      category: ExerciseCategory.upperBody,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 60,
+      instructions:
+          'Keep your back comfortable and pull your elbows backward.',
+      womensWellness: false,
+    ),
+
+    // =========================
+    // CORE
+    // =========================
+
+    LibraryExercise(
+      id: 'dead_bug',
+      name: 'Dead Bug',
+      description: 'Controlled core stability exercise.',
+      muscleGroup: 'Core',
+      category: ExerciseCategory.core,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 45,
+      instructions:
+          'Move opposite arm and leg slowly while keeping your core controlled.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'bird_dog',
+      name: 'Bird Dog',
+      description: 'Core stability and balance exercise.',
+      muscleGroup: 'Core & Back',
+      category: ExerciseCategory.core,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 10,
+      defaultRestSeconds: 45,
+      instructions:
+          'From a hands-and-knees position, extend opposite arm and leg with control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'mountain_climber',
+      name: 'Mountain Climber',
+      description: 'Dynamic cardio and core exercise.',
+      muscleGroup: 'Core & Full Body',
+      category: ExerciseCategory.cardio,
+      difficulty: ExerciseDifficulty.intermediate,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 20,
+      defaultRestSeconds: 45,
+      instructions:
+          'Maintain a stable upper body while alternating your legs.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'bicycle_crunch',
+      name: 'Bicycle Crunch',
+      description: 'Core exercise with alternating trunk movement.',
+      muscleGroup: 'Core',
+      category: ExerciseCategory.core,
+      difficulty: ExerciseDifficulty.intermediate,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 12,
+      defaultRestSeconds: 45,
+      instructions:
+          'Move slowly and focus on controlled core engagement.',
+      womensWellness: false,
+    ),
+
+    // =========================
+    // CARDIO / FULL BODY
+    // =========================
+
+    LibraryExercise(
+      id: 'high_knees',
+      name: 'High Knees',
+      description: 'Cardio movement performed in place.',
+      muscleGroup: 'Full Body',
+      category: ExerciseCategory.cardio,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 30,
+      defaultRestSeconds: 45,
+      instructions:
+          'Alternate knees at a comfortable pace and land with control.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'butt_kicks',
+      name: 'Butt Kicks',
+      description: 'Light cardio movement performed in place.',
+      muscleGroup: 'Legs',
+      category: ExerciseCategory.cardio,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 30,
+      defaultRestSeconds: 45,
+      instructions:
+          'Alternate your heels toward the back while maintaining balance.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'march_in_place',
+      name: 'March in Place',
+      description: 'Low-impact cardio and warm-up movement.',
+      muscleGroup: 'Full Body',
+      category: ExerciseCategory.cardio,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 60,
+      defaultRestSeconds: 30,
+      instructions:
+          'March comfortably in place while moving your arms naturally.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'burpee',
+      name: 'Burpee',
+      description: 'Full-body conditioning exercise.',
+      muscleGroup: 'Full Body',
+      category: ExerciseCategory.fullBody,
+      difficulty: ExerciseDifficulty.advanced,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 3,
+      defaultReps: 8,
+      defaultRestSeconds: 90,
+      instructions:
+          'Perform each phase under control and choose a suitable pace.',
+      womensWellness: false,
+    ),
+
+    // =========================
+    // MOBILITY / FLEXIBILITY
+    // =========================
+
+    LibraryExercise(
+      id: 'cat_cow',
+      name: 'Cat-Cow',
+      description: 'Gentle spinal mobility movement.',
+      muscleGroup: 'Back & Core',
+      category: ExerciseCategory.mobility,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 30,
+      instructions:
+          'Move slowly between the two comfortable spinal positions.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'hip_circles',
+      name: 'Hip Circles',
+      description: 'Gentle hip mobility movement.',
+      muscleGroup: 'Hips',
+      category: ExerciseCategory.mobility,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 30,
+      instructions:
+          'Make small controlled circles through a comfortable range of motion.',
+      womensWellness: false,
+    ),
+
+    LibraryExercise(
+      id: 'shoulder_circles',
+      name: 'Shoulder Circles',
+      description: 'Gentle shoulder mobility exercise.',
+      muscleGroup: 'Shoulders',
+      category: ExerciseCategory.mobility,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 30,
+      instructions:
+          'Move the shoulders slowly through a comfortable range.',
+      womensWellness: false,
+    ),
+  ];
+
+  // --------------------------------------------------------------------------
+  // WOMEN'S WELLNESS EXERCISES
+  // --------------------------------------------------------------------------
+
+  static const List<LibraryExercise> womensWellnessExercises = [
+    LibraryExercise(
+      id: 'ww_glute_bridge',
+      name: 'Glute Bridge',
+      description:
+          'Gentle hip and glute strengthening movement used in the Women’s Wellness collection.',
+      muscleGroup: 'Glutes & Hips',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 45,
+      instructions:
+          'Move slowly and comfortably. Stop if the movement causes pain or discomfort.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_bodyweight_squat',
+      name: 'Women’s Wellness Squat',
+      description:
+          'Beginner-friendly squat included in the Women’s Wellness collection.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'squat',
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use a comfortable range of motion and keep the movement controlled.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_supported_lunge',
+      name: 'Supported Lunge',
+      description:
+          'Controlled lunge variation with emphasis on balance and comfort.',
+      muscleGroup: 'Legs & Glutes',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: true,
+      poseExerciseType: 'lunge',
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use support if needed and keep every repetition controlled.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_bird_dog',
+      name: 'Women’s Wellness Bird Dog',
+      description:
+          'Core stability and balance movement for the Women’s Wellness section.',
+      muscleGroup: 'Core & Back',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 45,
+      instructions:
+          'Move slowly and maintain comfortable control throughout the exercise.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_dead_bug',
+      name: 'Women’s Wellness Dead Bug',
+      description:
+          'Gentle controlled core stability exercise.',
+      muscleGroup: 'Core',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 45,
+      instructions:
+          'Keep movements slow and controlled and work within a comfortable range.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_cat_cow',
+      name: 'Women’s Wellness Cat-Cow',
+      description:
+          'Gentle spinal mobility movement.',
+      muscleGroup: 'Back & Core',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 30,
+      instructions:
+          'Move gently between positions without forcing the range of motion.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_hip_mobility',
+      name: 'Women’s Wellness Hip Mobility',
+      description:
+          'Gentle hip mobility routine.',
+      muscleGroup: 'Hips',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 30,
+      instructions:
+          'Use slow, comfortable movements and avoid forcing the range.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_wall_sit',
+      name: 'Women’s Wellness Wall Sit',
+      description:
+          'Controlled lower-body isometric exercise.',
+      muscleGroup: 'Quads & Glutes',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 20,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use a comfortable position and hold only as long as you can maintain good control.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_march',
+      name: 'Women’s Wellness March',
+      description:
+          'Low-impact movement suitable for gentle activity sessions.',
+      muscleGroup: 'Full Body',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 30,
+      defaultRestSeconds: 30,
+      instructions:
+          'March at a comfortable pace and adjust intensity to how you feel.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_shoulder_mobility',
+      name: 'Women’s Wellness Shoulder Mobility',
+      description:
+          'Gentle shoulder mobility movement.',
+      muscleGroup: 'Shoulders',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 10,
+      defaultRestSeconds: 30,
+      instructions:
+          'Move slowly through a comfortable range without forcing the joints.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_calf_raise',
+      name: 'Women’s Wellness Calf Raise',
+      description:
+          'Simple lower-leg strengthening movement.',
+      muscleGroup: 'Calves',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 12,
+      defaultRestSeconds: 45,
+      instructions:
+          'Rise and lower slowly while maintaining balance.',
+      womensWellness: true,
+    ),
+
+    LibraryExercise(
+      id: 'ww_incline_pushup',
+      name: 'Women’s Wellness Incline Push-up',
+      description:
+          'Beginner-friendly upper-body exercise using an elevated stable surface.',
+      muscleGroup: 'Chest & Triceps',
+      category: ExerciseCategory.womensWellness,
+      difficulty: ExerciseDifficulty.beginner,
+      cameraSupported: false,
+      poseExerciseType: null,
+      defaultSets: 2,
+      defaultReps: 8,
+      defaultRestSeconds: 60,
+      instructions:
+          'Use a stable elevated surface and keep your body aligned.',
+      womensWellness: true,
+    ),
+  ];
+
+  // --------------------------------------------------------------------------
+  // ALL EXERCISES
+  // --------------------------------------------------------------------------
+
+  List<LibraryExercise> get allExercises {
+    return [
+      ...generalExercises,
+      ...womensWellnessExercises,
+    ];
+  }
+
+  List<LibraryExercise> get generalOnly {
+    return generalExercises;
+  }
+
+  List<LibraryExercise> get womensWellnessOnly {
+    return womensWellnessExercises;
+  }
+
+  // --------------------------------------------------------------------------
+  // FIND / SEARCH
+  // --------------------------------------------------------------------------
+
+  LibraryExercise? findById(String id) {
+    for (final exercise in allExercises) {
+      if (exercise.id == id) {
+        return exercise;
+      }
+    }
+    return null;
+  }
+
+  LibraryExercise? findByName(String name) {
+    final normalized = name.trim().toLowerCase();
+
+    for (final exercise in allExercises) {
+      if (exercise.name.toLowerCase() == normalized) {
+        return exercise;
+      }
+    }
+
+    return null;
+  }
+
+  List<LibraryExercise> search(String query) {
+    final q = query.trim().toLowerCase();
+
+    if (q.isEmpty) {
+      return allExercises;
+    }
+
+    return allExercises.where((exercise) {
+      return exercise.name.toLowerCase().contains(q) ||
+          exercise.description.toLowerCase().contains(q) ||
+          exercise.muscleGroup.toLowerCase().contains(q) ||
+          exercise.category.name.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  // --------------------------------------------------------------------------
+  // FILTERS
+  // --------------------------------------------------------------------------
+
+  List<LibraryExercise> byCategory(ExerciseCategory category) {
+    return allExercises
+        .where((exercise) => exercise.category == category)
+        .toList();
+  }
+
+  List<LibraryExercise> byDifficulty(ExerciseDifficulty difficulty) {
+    return allExercises
+        .where((exercise) => exercise.difficulty == difficulty)
+        .toList();
+  }
+
+  List<LibraryExercise> cameraSupportedExercises() {
+    return allExercises
+        .where((exercise) => exercise.cameraSupported)
+        .toList();
+  }
+
+  // --------------------------------------------------------------------------
+  // CAMERA SUPPORT
+  // --------------------------------------------------------------------------
+
+  bool supportsCamera(String exerciseName) {
+    final exercise = findByName(exerciseName);
+
+    return exercise?.cameraSupported ?? false;
+  }
+
+  String? poseTypeFor(String exerciseName) {
+    final exercise = findByName(exerciseName);
+    return exercise?.poseExerciseType;
+  }
+
+  // --------------------------------------------------------------------------
+  // DEFAULT PLAN HELPERS
+  // --------------------------------------------------------------------------
+
+  List<LibraryExercise> beginnerExercises() {
+    return allExercises
+        .where(
+          (exercise) =>
+              exercise.difficulty == ExerciseDifficulty.beginner,
+        )
+        .toList();
+  }
+
+  List<LibraryExercise> exercisesForWomenWellness() {
+    return womensWellnessExercises;
+  }
+
+  List<LibraryExercise> exercisesForGoal(String goal) {
+    final normalized = goal.toLowerCase();
+
+    if (normalized.contains('strength') ||
+        normalized.contains('muscle')) {
+      return allExercises.where((exercise) {
+        return exercise.category == ExerciseCategory.strength ||
+            exercise.category == ExerciseCategory.upperBody ||
+            exercise.category == ExerciseCategory.lowerBody ||
+            exercise.category == ExerciseCategory.fullBody;
+      }).toList();
+    }
+
+    if (normalized.contains('cardio') ||
+        normalized.contains('fitness') ||
+        normalized.contains('endurance')) {
+      return allExercises.where((exercise) {
+        return exercise.category == ExerciseCategory.cardio ||
+            exercise.category == ExerciseCategory.fullBody;
+      }).toList();
+    }
+
+    if (normalized.contains('mobility') ||
+        normalized.contains('flexibility')) {
+      return allExercises.where((exercise) {
+        return exercise.category == ExerciseCategory.mobility ||
+            exercise.category == ExerciseCategory.flexibility;
+      }).toList();
+    }
+
+    return allExercises;
+  }
+}
+
+final exerciseLibrary = ExerciseLibrary.instance;
+

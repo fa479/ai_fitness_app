@@ -1,4 +1,4 @@
-﻿import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -22,6 +22,7 @@ import 'core/voice_service.dart';
 void main() {
   runApp(const AIFitnessApp());
 }
+
 class AIFitnessApp extends StatefulWidget {
   const AIFitnessApp({super.key});
 
@@ -47,8 +48,7 @@ class _AIFitnessAppState extends State<AIFitnessApp> {
 
   Future<void> loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedAppearance =
-        prefs.getString('appearance') ?? 'Dark mode';
+    final savedAppearance = prefs.getString('appearance') ?? 'Dark mode';
 
     if (!mounted) return;
 
@@ -95,9 +95,7 @@ class _AIFitnessAppState extends State<AIFitnessApp> {
         scaffoldBackgroundColor: const Color(0xFF101014),
       ),
 
-      home: HomeScreen(
-        onThemeChanged: changeThemeMode,
-      ),
+      home: HomeScreen(onThemeChanged: changeThemeMode),
     );
   }
 }
@@ -105,10 +103,7 @@ class _AIFitnessAppState extends State<AIFitnessApp> {
 class HomeScreen extends StatefulWidget {
   final ValueChanged<ThemeMode> onThemeChanged;
 
-  const HomeScreen({
-    super.key,
-    required this.onThemeChanged,
-  });
+  const HomeScreen({super.key, required this.onThemeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -121,9 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomeContent(),
     const WorkoutScreen(),
     const ProgressScreen(),
-    ProfileScreen(
-      onThemeChanged: widget.onThemeChanged,
-    ),
+    ProfileScreen(onThemeChanged: widget.onThemeChanged),
   ];
 
   @override
@@ -132,9 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text(
           'AI Fitness',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
       ),
@@ -185,20 +176,14 @@ class HomeContent extends StatelessWidget {
         children: [
           const Text(
             'Welcome Back ðŸ‘‹',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Your AI personal trainer is ready.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
           ),
 
           const SizedBox(height: 24),
@@ -232,8 +217,7 @@ class HomeContent extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            const FormCheckScreen(),
+                        builder: (context) => const FormCheckScreen(),
                       ),
                     );
                   },
@@ -268,8 +252,7 @@ class HomeContent extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      const WomensWellnessScreen(),
+                  builder: (context) => const WomensWellnessScreen(),
                 ),
               );
             },
@@ -278,10 +261,7 @@ class HomeContent extends StatelessWidget {
 
           const Text(
             'Quick Actions',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -300,8 +280,7 @@ class HomeContent extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      const ExerciseLibraryScreen(),
+                  builder: (context) => const ExerciseLibraryScreen(),
                 ),
               );
             },
@@ -341,38 +320,26 @@ class _FeatureCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerHighest,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              size: 30,
-              color: Colors.deepPurpleAccent,
-            ),
+            Icon(icon, size: 30, color: Colors.deepPurpleAccent),
 
             const SizedBox(height: 14),
 
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 5),
 
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade400,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
             ),
           ],
         ),
@@ -405,10 +372,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
     if (message.isEmpty) return;
 
     setState(() {
-      _messages.add({
-        'sender': 'You',
-        'message': message,
-      });
+      _messages.add({'sender': 'You', 'message': message});
 
       _messages.add({
         'sender': 'AI',
@@ -446,8 +410,9 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 final isAI = message['sender'] == 'AI';
 
                 return Align(
-                  alignment:
-                      isAI ? Alignment.centerLeft : Alignment.centerRight,
+                  alignment: isAI
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(14),
@@ -501,6 +466,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
     );
   }
 }
+
 class WomensWellnessScreen extends StatelessWidget {
   const WomensWellnessScreen({super.key});
 
@@ -533,26 +499,17 @@ class WomensWellnessScreen extends StatelessWidget {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.favorite_outline,
-                    size: 34,
-                  ),
+                  Icon(Icons.favorite_outline, size: 34),
                   SizedBox(height: 12),
                   Text(
                     'Your wellness, your way',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Personalized wellness guidance designed '
                     'around women’s fitness and wellbeing.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(fontSize: 14, height: 1.5),
                   ),
                 ],
               ),
@@ -562,10 +519,7 @@ class WomensWellnessScreen extends StatelessWidget {
 
             const Text(
               'Women’s Wellness',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 15),
@@ -573,17 +527,15 @@ class WomensWellnessScreen extends StatelessWidget {
             _WellnessFeatureTile(
               icon: Icons.calendar_month_outlined,
               title: 'Cycle-Aware Fitness',
-              subtitle:
-                  'Get workout guidance that can adapt to your cycle.',
+              subtitle: 'Get workout guidance that can adapt to your cycle.',
               onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const CycleAwareFitnessScreen(),
-                    ),
-                  );
-                },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CycleAwareFitnessScreen(),
+                  ),
+                );
+              },
             ),
 
             _WellnessFeatureTile(
@@ -597,8 +549,7 @@ class WomensWellnessScreen extends StatelessWidget {
             _WellnessFeatureTile(
               icon: Icons.favorite_border,
               title: 'PCOS Support',
-              subtitle:
-                  'Wellness and fitness guidance for users with PCOS.',
+              subtitle: 'Wellness and fitness guidance for users with PCOS.',
               onTap: () {},
             ),
 
@@ -613,8 +564,7 @@ class WomensWellnessScreen extends StatelessWidget {
             _WellnessFeatureTile(
               icon: Icons.wb_sunny_outlined,
               title: 'Hormonal Wellness',
-              subtitle:
-                  'Learn about fitness, recovery and healthy habits.',
+              subtitle: 'Learn about fitness, recovery and healthy habits.',
               onTap: () {},
             ),
 
@@ -668,10 +618,7 @@ class _WellnessFeatureTile extends StatelessWidget {
                     color: colorScheme.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    icon,
-                    color: colorScheme.primary,
-                  ),
+                  child: Icon(icon, color: colorScheme.primary),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -723,9 +670,7 @@ class ExerciseHowToScreen extends StatelessWidget {
     if (videoUrl == null || videoUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Video is not available for this exercise yet.',
-          ),
+          content: Text('Video is not available for this exercise yet.'),
         ),
       );
       return;
@@ -737,34 +682,25 @@ class ExerciseHowToScreen extends StatelessWidget {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to open exercise video.'),
-        ),
+        const SnackBar(content: Text('Unable to open exercise video.')),
       );
       return;
     }
 
-    await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final steps = List<String>.from(
-      details['steps'] ?? const <String>[],
-    );
+    final steps = List<String>.from(details['steps'] ?? const <String>[]);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           exerciseName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -772,14 +708,11 @@ class ExerciseHowToScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(
-                  alpha: 0.10,
-                ),
+                color: colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -801,9 +734,7 @@ class ExerciseHowToScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'How to do this exercise',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -815,15 +746,10 @@ class ExerciseHowToScreen extends StatelessWidget {
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () => _openVideo(context),
-                icon: const Icon(
-                  Icons.play_circle_outline,
-                ),
+                icon: const Icon(Icons.play_circle_outline),
                 label: const Text(
                   'Watch Exercise Video',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -832,10 +758,7 @@ class ExerciseHowToScreen extends StatelessWidget {
 
             const Text(
               'Steps',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -845,24 +768,18 @@ class ExerciseHowToScreen extends StatelessWidget {
               final step = entry.value;
 
               return Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 12,
-                ),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Container(
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(
-                              alpha: 0.12,
-                            ),
+                            color: colorScheme.primary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -881,10 +798,7 @@ class ExerciseHowToScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             step,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              height: 1.5,
-                            ),
+                            style: const TextStyle(fontSize: 15, height: 1.5),
                           ),
                         ),
                       ],
@@ -901,27 +815,18 @@ class ExerciseHowToScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(
-                    alpha: 0.06,
-                  ),
+                  color: colorScheme.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.lightbulb_outline,
-                      color: colorScheme.primary,
-                    ),
+                    Icon(Icons.lightbulb_outline, color: colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         details['tip'].toString(),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
+                        style: const TextStyle(fontSize: 13, height: 1.5),
                       ),
                     ),
                   ],
@@ -939,8 +844,7 @@ class ExerciseHowToScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Row(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.info_outline),
                   SizedBox(width: 12),
@@ -948,10 +852,7 @@ class ExerciseHowToScreen extends StatelessWidget {
                     child: Text(
                       'Use comfortable movement and focus on controlled '
                       'technique. Stop if an exercise causes pain or feels unsafe.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                   ),
                 ],
@@ -965,6 +866,7 @@ class ExerciseHowToScreen extends StatelessWidget {
     );
   }
 }
+
 class CycleAwareFitnessScreen extends StatefulWidget {
   const CycleAwareFitnessScreen({super.key});
 
@@ -973,8 +875,7 @@ class CycleAwareFitnessScreen extends StatefulWidget {
       _CycleAwareFitnessScreenState();
 }
 
-class _CycleAwareFitnessScreenState
-    extends State<CycleAwareFitnessScreen> {
+class _CycleAwareFitnessScreenState extends State<CycleAwareFitnessScreen> {
   String selectedPhase = 'Menstrual';
 
   final Map<String, Map<String, dynamic>> phaseGuidance = {
@@ -994,17 +895,12 @@ class _CycleAwareFitnessScreenState
       'focus': 'Strength, cardio and skill-building',
       'tip':
           'If your energy feels good, gradually increase training intensity.',
-      'workouts': [
-        'Strength Training',
-        'Moderate Cardio',
-        'Full-Body Workout',
-      ],
+      'workouts': ['Strength Training', 'Moderate Cardio', 'Full-Body Workout'],
     },
     'Ovulatory': {
       'intensity': 'Moderate to high',
       'focus': 'Strength, cardio and performance',
-      'tip':
-          'Prioritize good technique, controlled movement and recovery.',
+      'tip': 'Prioritize good technique, controlled movement and recovery.',
       'workouts': [
         'Strength Workout',
         'Cardio Intervals',
@@ -1014,8 +910,7 @@ class _CycleAwareFitnessScreenState
     'Luteal': {
       'intensity': 'Moderate',
       'focus': 'Steady training, strength and recovery',
-      'tip':
-          'Adjust workout intensity based on your energy and comfort.',
+      'tip': 'Adjust workout intensity based on your energy and comfort.',
       'workouts': [
         'Moderate Strength Workout',
         'Steady-State Cardio',
@@ -1049,11 +944,7 @@ class _CycleAwareFitnessScreenState
       'Glute Bridge',
       'Bird Dog',
     ],
-    'Moderate Cardio': [
-      'Brisk Walking',
-      'Marching in Place',
-      'Step Touch',
-    ],
+    'Moderate Cardio': ['Brisk Walking', 'Marching in Place', 'Step Touch'],
     'Full-Body Workout': [
       'Bodyweight Squat',
       'Wall Push-Up',
@@ -1066,11 +957,7 @@ class _CycleAwareFitnessScreenState
       'Glute Bridge',
       'Bird Dog',
     ],
-    'Cardio Intervals': [
-      'Marching in Place',
-      'Step Touch',
-      'Brisk Walking',
-    ],
+    'Cardio Intervals': ['Marching in Place', 'Step Touch', 'Brisk Walking'],
     'Full-Body Training': [
       'Bodyweight Squat',
       'Wall Push-Up',
@@ -1083,11 +970,7 @@ class _CycleAwareFitnessScreenState
       'Glute Bridge',
       'Bird Dog',
     ],
-    'Steady-State Cardio': [
-      'Brisk Walking',
-      'Marching in Place',
-      'Step Touch',
-    ],
+    'Steady-State Cardio': ['Brisk Walking', 'Marching in Place', 'Step Touch'],
     'Mobility & Recovery': [
       'Shoulder Rolls',
       'Hip Circles',
@@ -1096,142 +979,217 @@ class _CycleAwareFitnessScreenState
     ],
   };
   final Map<String, Map<String, dynamic>> exerciseDetails = {
-  'Supported Squat': {
-    'howTo': [
-      'Stand with your feet about shoulder-width apart.',
-      'Keep your chest comfortable and your back neutral.',
-      'Bend your knees and hips slowly while staying balanced.',
-      'Push through your feet to return to the starting position.',
-    ],
-    'focus': 'Lower-body strength and controlled movement',
-    'videoUrls': {
-      'English': 'https://www.youtube.com/results?search_query=supported+squat+exercise+English',
-      'Urdu': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Urdu',
-      'Sindhi': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Sindhi',
-      'Punjabi': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Punjabi',
-      'Pashto': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Pashto',
-      'Balochi': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Balochi',
-      'Saraiki': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Saraiki',
-      'Hindko': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Hindko',
-      'Kashmiri': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Kashmiri',
-      'Shina': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Shina',
-      'Balti': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Balti',
-      'Brahui': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Brahui',
-      'Wakhi': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Wakhi',
-      'Khowar': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Khowar',
-      'Burushaski': 'https://www.youtube.com/results?search_query=supported+squat+exercise+Burushaski',
+    'Supported Squat': {
+      'howTo': [
+        'Stand with your feet about shoulder-width apart.',
+        'Keep your chest comfortable and your back neutral.',
+        'Bend your knees and hips slowly while staying balanced.',
+        'Push through your feet to return to the starting position.',
+      ],
+      'focus': 'Lower-body strength and controlled movement',
+      'videoUrls': {
+        'English':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+English',
+        'Urdu':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Urdu',
+        'Sindhi':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Sindhi',
+        'Punjabi':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Punjabi',
+        'Pashto':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Pashto',
+        'Balochi':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Balochi',
+        'Saraiki':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Saraiki',
+        'Hindko':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Hindko',
+        'Kashmiri':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Kashmiri',
+        'Shina':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Shina',
+        'Balti':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Balti',
+        'Brahui':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Brahui',
+        'Wakhi':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Wakhi',
+        'Khowar':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Khowar',
+        'Burushaski':
+            'https://www.youtube.com/results?search_query=supported+squat+exercise+Burushaski',
+      },
     },
-  },
 
-  'Wall Push-Up': {
-    'howTo': [
-      'Stand facing a wall and place your hands on it.',
-      'Keep your body in a comfortable straight position.',
-      'Bend your elbows and slowly move toward the wall.',
-      'Push gently away from the wall to return to the start.',
-    ],
-    'focus': 'Upper-body strength and controlled movement',
-    'videoUrls': {
-      'English': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+English',
-      'Urdu': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Urdu',
-      'Sindhi': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Sindhi',
-      'Punjabi': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Punjabi',
-      'Pashto': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Pashto',
-      'Balochi': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Balochi',
-      'Saraiki': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Saraiki',
-      'Hindko': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Hindko',
-      'Kashmiri': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Kashmiri',
-      'Shina': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Shina',
-      'Balti': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Balti',
-      'Brahui': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Brahui',
-      'Wakhi': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Wakhi',
-      'Khowar': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Khowar',
-      'Burushaski': 'https://www.youtube.com/results?search_query=wall+push+up+exercise+Burushaski',
+    'Wall Push-Up': {
+      'howTo': [
+        'Stand facing a wall and place your hands on it.',
+        'Keep your body in a comfortable straight position.',
+        'Bend your elbows and slowly move toward the wall.',
+        'Push gently away from the wall to return to the start.',
+      ],
+      'focus': 'Upper-body strength and controlled movement',
+      'videoUrls': {
+        'English':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+English',
+        'Urdu':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Urdu',
+        'Sindhi':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Sindhi',
+        'Punjabi':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Punjabi',
+        'Pashto':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Pashto',
+        'Balochi':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Balochi',
+        'Saraiki':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Saraiki',
+        'Hindko':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Hindko',
+        'Kashmiri':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Kashmiri',
+        'Shina':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Shina',
+        'Balti':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Balti',
+        'Brahui':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Brahui',
+        'Wakhi':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Wakhi',
+        'Khowar':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Khowar',
+        'Burushaski':
+            'https://www.youtube.com/results?search_query=wall+push+up+exercise+Burushaski',
+      },
     },
-  },
 
-  'Glute Bridge': {
-    'howTo': [
-      'Lie comfortably on your back with your knees bent.',
-      'Keep your feet supported on the floor.',
-      'Lift your hips slowly while keeping the movement controlled.',
-      'Lower your hips gently and repeat at a comfortable pace.',
-    ],
-    'focus': 'Glute and lower-body strength',
-    'videoUrls': {
-      'English': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+English',
-      'Urdu': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Urdu',
-      'Sindhi': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Sindhi',
-      'Punjabi': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Punjabi',
-      'Pashto': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Pashto',
-      'Balochi': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Balochi',
-      'Saraiki': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Saraiki',
-      'Hindko': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Hindko',
-      'Kashmiri': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Kashmiri',
-      'Shina': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Shina',
-      'Balti': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Balti',
-      'Brahui': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Brahui',
-      'Wakhi': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Wakhi',
-      'Khowar': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Khowar',
-      'Burushaski': 'https://www.youtube.com/results?search_query=glute+bridge+exercise+Burushaski',
+    'Glute Bridge': {
+      'howTo': [
+        'Lie comfortably on your back with your knees bent.',
+        'Keep your feet supported on the floor.',
+        'Lift your hips slowly while keeping the movement controlled.',
+        'Lower your hips gently and repeat at a comfortable pace.',
+      ],
+      'focus': 'Glute and lower-body strength',
+      'videoUrls': {
+        'English':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+English',
+        'Urdu':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Urdu',
+        'Sindhi':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Sindhi',
+        'Punjabi':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Punjabi',
+        'Pashto':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Pashto',
+        'Balochi':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Balochi',
+        'Saraiki':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Saraiki',
+        'Hindko':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Hindko',
+        'Kashmiri':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Kashmiri',
+        'Shina':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Shina',
+        'Balti':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Balti',
+        'Brahui':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Brahui',
+        'Wakhi':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Wakhi',
+        'Khowar':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Khowar',
+        'Burushaski':
+            'https://www.youtube.com/results?search_query=glute+bridge+exercise+Burushaski',
+      },
     },
-  },
 
-  'Gentle Walking': {
-    'howTo': [
-      'Start at an easy, comfortable walking pace.',
-      'Keep your posture relaxed while walking.',
-      'Maintain a pace that feels manageable.',
-      'Slow down gradually before finishing.',
-    ],
-    'focus': 'Light movement and recovery',
-    'videoUrls': {
-      'English': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+English',
-      'Urdu': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Urdu',
-      'Sindhi': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Sindhi',
-      'Punjabi': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Punjabi',
-      'Pashto': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Pashto',
-      'Balochi': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Balochi',
-      'Saraiki': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Saraiki',
-      'Hindko': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Hindko',
-      'Kashmiri': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Kashmiri',
-      'Shina': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Shina',
-      'Balti': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Balti',
-      'Brahui': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Brahui',
-      'Wakhi': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Wakhi',
-      'Khowar': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Khowar',
-      'Burushaski': 'https://www.youtube.com/results?search_query=gentle+walking+exercise+Burushaski',
+    'Gentle Walking': {
+      'howTo': [
+        'Start at an easy, comfortable walking pace.',
+        'Keep your posture relaxed while walking.',
+        'Maintain a pace that feels manageable.',
+        'Slow down gradually before finishing.',
+      ],
+      'focus': 'Light movement and recovery',
+      'videoUrls': {
+        'English':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+English',
+        'Urdu':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Urdu',
+        'Sindhi':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Sindhi',
+        'Punjabi':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Punjabi',
+        'Pashto':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Pashto',
+        'Balochi':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Balochi',
+        'Saraiki':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Saraiki',
+        'Hindko':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Hindko',
+        'Kashmiri':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Kashmiri',
+        'Shina':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Shina',
+        'Balti':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Balti',
+        'Brahui':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Brahui',
+        'Wakhi':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Wakhi',
+        'Khowar':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Khowar',
+        'Burushaski':
+            'https://www.youtube.com/results?search_query=gentle+walking+exercise+Burushaski',
+      },
     },
-  },
 
-  'Mobility & Stretching': {
-    'howTo': [
-      'Begin with gentle shoulder and neck movements.',
-      'Move through comfortable hip and ankle mobility.',
-      'Add gentle full-body stretches.',
-      'Never force a stretch or movement.',
-    ],
-    'focus': 'Mobility and comfortable movement',
-    'videoUrls': {
-      'English': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+English',
-      'Urdu': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Urdu',
-      'Sindhi': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Sindhi',
-      'Punjabi': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Punjabi',
-      'Pashto': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Pashto',
-      'Balochi': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Balochi',
-      'Saraiki': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Saraiki',
-      'Hindko': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Hindko',
-      'Kashmiri': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Kashmiri',
-      'Shina': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Shina',
-      'Balti': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Balti',
-      'Brahui': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Brahui',
-      'Wakhi': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Wakhi',
-      'Khowar': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Khowar',
-      'Burushaski': 'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Burushaski',
+    'Mobility & Stretching': {
+      'howTo': [
+        'Begin with gentle shoulder and neck movements.',
+        'Move through comfortable hip and ankle mobility.',
+        'Add gentle full-body stretches.',
+        'Never force a stretch or movement.',
+      ],
+      'focus': 'Mobility and comfortable movement',
+      'videoUrls': {
+        'English':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+English',
+        'Urdu':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Urdu',
+        'Sindhi':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Sindhi',
+        'Punjabi':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Punjabi',
+        'Pashto':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Pashto',
+        'Balochi':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Balochi',
+        'Saraiki':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Saraiki',
+        'Hindko':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Hindko',
+        'Kashmiri':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Kashmiri',
+        'Shina':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Shina',
+        'Balti':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Balti',
+        'Brahui':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Brahui',
+        'Wakhi':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Wakhi',
+        'Khowar':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Khowar',
+        'Burushaski':
+            'https://www.youtube.com/results?search_query=mobility+stretching+exercise+Burushaski',
+      },
     },
-  },
-};
-final Map<String, Map<String, dynamic>> workoutDetails = {
+  };
+  final Map<String, Map<String, dynamic>> workoutDetails = {
     'Gentle Walking': {
       'duration': '10–20 min',
       'focus': 'Light movement and recovery',
@@ -1386,13 +1344,12 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ExerciseHowToScreen(
-          exerciseName: exerciseName,
-          details: details,
-        ),
+        builder: (context) =>
+            ExerciseHowToScreen(exerciseName: exerciseName, details: details),
       ),
     );
   }
+
   void _openWorkout(String workoutName) {
     final details = workoutDetails[workoutName];
 
@@ -1444,26 +1401,17 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.calendar_month_outlined,
-                    size: 34,
-                  ),
+                  Icon(Icons.calendar_month_outlined, size: 34),
                   SizedBox(height: 12),
                   Text(
                     'Fitness that adapts to you',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Select a cycle phase to see general workout '
                     'and recovery guidance.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(fontSize: 14, height: 1.5),
                   ),
                 ],
               ),
@@ -1473,10 +1421,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
 
             const Text(
               'Current cycle phase',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 12),
@@ -1488,9 +1433,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                prefixIcon: const Icon(
-                  Icons.calendar_today_outlined,
-                ),
+                prefixIcon: const Icon(Icons.calendar_today_outlined),
               ),
               items: phaseGuidance.keys.map((phase) {
                 return DropdownMenuItem<String>(
@@ -1531,10 +1474,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
 
                   const Text(
                     'Suggested intensity',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
 
                   const SizedBox(height: 6),
@@ -1548,10 +1488,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
 
                   const Text(
                     'Fitness focus',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
 
                   const SizedBox(height: 6),
@@ -1565,10 +1502,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
 
                   const Text(
                     'FitAI tip',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
 
                   const SizedBox(height: 6),
@@ -1585,20 +1519,14 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
 
             const Text(
               'Suggested workouts',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
 
             Text(
               'Tap a workout to learn how to do it.',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
             ),
 
             const SizedBox(height: 14),
@@ -1672,12 +1600,9 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
                 ],
               };
 
-              final exercises = exerciseMap[workout] ??
-                  [
-                    'Bodyweight Squat',
-                    'Wall Push-Up',
-                    'Glute Bridge',
-                  ];
+              final exercises =
+                  exerciseMap[workout] ??
+                  ['Bodyweight Squat', 'Wall Push-Up', 'Glute Bridge'];
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -1810,10 +1735,7 @@ final Map<String, Map<String, dynamic>> workoutDetails = {
                       'Cycle experiences vary from person to person. '
                       'Use these suggestions as general wellness guidance '
                       'and adjust activity according to your comfort.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
+                      style: TextStyle(fontSize: 12, height: 1.5),
                     ),
                   ),
                 ],
@@ -1864,10 +1786,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
           children: [
             Text(
               workoutName,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
@@ -1906,10 +1825,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
 
             const Text(
               'How to do it',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 14),
@@ -1934,9 +1850,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(
-                            alpha: 0.12,
-                          ),
+                          color: colorScheme.primary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -1955,10 +1869,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           step,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.5,
-                          ),
+                          style: const TextStyle(fontSize: 14, height: 1.5),
                         ),
                       ),
                     ],
@@ -2001,10 +1912,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           tip,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
+                          style: const TextStyle(fontSize: 13, height: 1.5),
                         ),
                       ],
                     ),
@@ -2018,10 +1926,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
             const Text(
               'This feature provides general wellness guidance, '
               'not medical advice.',
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 12, height: 1.5),
             ),
 
             const SizedBox(height: 20),
@@ -2056,278 +1961,214 @@ class _WorkoutInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: colorScheme.primary,
-          ),
+          Icon(icon, color: colorScheme.primary),
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 13, height: 1.4)),
         ],
       ),
     );
   }
 }
 
-class WorkoutScreen extends StatefulWidget { 
-  const WorkoutScreen({super.key}); 
- 
-  @override 
-  State<WorkoutScreen> createState() => _WorkoutScreenState(); 
-} 
- 
-class _WorkoutScreenState extends State<WorkoutScreen> { 
-  final List<Map<String, dynamic>> exercises = [ 
-    { 
-      'name': 'Bench Press', 
-      'muscle': 'Chest', 
-      'sets': 3, 
-      'reps': 10, 
-    }, 
-    { 
-      'name': 'Shoulder Press', 
-      'muscle': 'Shoulders', 
-      'sets': 3, 
-      'reps': 10, 
-    }, 
-    { 
-      'name': 'Lat Pulldown', 
-      'muscle': 'Back', 
-      'sets': 3, 
-      'reps': 12, 
-    }, 
-    { 
-      'name': 'Bicep Curls', 
-      'muscle': 'Biceps', 
-      'sets': 3, 
-      'reps': 12, 
-    }, 
-    { 
-      'name': 'Tricep Pushdown', 
-      'muscle': 'Triceps', 
-      'sets': 3, 
-      'reps': 12, 
-    }, 
-  ]; 
- 
-  @override 
-  void initState() { 
-    super.initState(); 
-    loadCustomExercises(); 
-  } 
- 
-  Future<void> loadCustomExercises() async { 
-    final prefs = await SharedPreferences.getInstance(); 
- 
-    final savedExercises = 
-        prefs.getStringList('custom_exercises'); 
- 
-    if (savedExercises == null) return; 
- 
-    if (!mounted) return; 
- 
-    setState(() { 
-      for (final item in savedExercises) { 
-        final parts = item.split('|'); 
- 
-        if (parts.length == 4) { 
-          exercises.add({ 
-            'name': parts[0], 
-            'muscle': parts[1], 
-            'sets': int.tryParse(parts[2]) ?? 3, 
-            'reps': int.tryParse(parts[3]) ?? 10, 
-          }); 
-        } 
-      } 
-    }); 
-  } 
- 
-  @override 
-  Widget build(BuildContext context) { 
-    return SingleChildScrollView( 
-      padding: const EdgeInsets.all(20), 
-      child: Column( 
-        crossAxisAlignment: CrossAxisAlignment.start, 
-        children: [ 
-          const Text( 
-            'Your Workout', 
-            style: TextStyle( 
-              fontSize: 28, 
-              fontWeight: FontWeight.bold, 
-            ), 
-          ), 
- 
-          const SizedBox(height: 8), 
- 
-          Text( 
-            'Your AI-powered training plan', 
-            style: TextStyle( 
-              fontSize: 15, 
-              color: Colors.grey.shade400, 
-            ), 
-          ), 
- 
-          const SizedBox(height: 24), 
- 
-          Container( 
-            width: double.infinity, 
-            padding: const EdgeInsets.all(20), 
-            decoration: BoxDecoration( 
-              color: Theme.of(context) 
-                  .colorScheme 
-                  .surfaceContainerHighest, 
-              borderRadius: BorderRadius.circular(20), 
-            ), 
-            child: Column( 
-              crossAxisAlignment: CrossAxisAlignment.start, 
-              children: [ 
-                Row( 
-                  children: [ 
-                    Container( 
-                      padding: const EdgeInsets.all(12), 
-                      decoration: BoxDecoration( 
-                        color: Colors.deepPurpleAccent 
-                            .withValues(alpha: 0.15), 
-                        borderRadius: BorderRadius.circular(14), 
-                      ), 
-                      child: const Icon( 
-                        Icons.auto_awesome, 
-                        color: Colors.deepPurpleAccent, 
-                        size: 28, 
-                      ), 
-                    ), 
- 
-                    const SizedBox(width: 14), 
- 
-                    const Expanded( 
-                      child: Column( 
-                        crossAxisAlignment: 
-                            CrossAxisAlignment.start, 
-                        children: [ 
-                          Text( 
-                            'Today\'s Workout', 
-                            style: TextStyle( 
-                              fontSize: 19, 
-                              fontWeight: FontWeight.bold, 
-                            ), 
-                          ), 
-                          SizedBox(height: 4), 
-                          Text( 
-                            'Upper Body â€¢ 45 min', 
-                            style: TextStyle( 
-                              color: Colors.grey, 
-                            ), 
-                          ), 
-                        ], 
-                      ), 
-                    ), 
-                  ], 
-                ), 
- 
-                const SizedBox(height: 20), 
- 
-                Row( 
-                  children: [ 
-                    Expanded( 
-                      child: _WorkoutStat( 
-                        value: '${exercises.length}', 
-                        label: 'Exercises', 
-                      ), 
-                    ), 
-                    const Expanded( 
-                      child: _WorkoutStat( 
-                        value: '3', 
-                        label: 'Sets', 
-                      ), 
-                    ), 
-                    const Expanded( 
-                      child: _WorkoutStat( 
-                        value: '45', 
-                        label: 'Minutes', 
-                      ), 
-                    ), 
-                  ], 
-                ), 
-              ], 
-            ), 
-          ), 
- 
-          const SizedBox(height: 28), 
- 
-          const Text( 
-            'Exercises', 
-            style: TextStyle( 
-              fontSize: 21, 
-              fontWeight: FontWeight.bold, 
-            ), 
-          ), 
- 
-          const SizedBox(height: 15), 
- 
-          ...exercises.map( 
-            (exercise) => _ExerciseTile( 
-              icon: Icons.fitness_center, 
-              name: exercise['name'], 
-              details: 
-                  '${exercise['sets']} sets Ã— ' 
-                  '${exercise['reps']} reps', 
-            ), 
-          ), 
- 
-          const SizedBox(height: 15), 
- 
-          SizedBox( 
-            width: double.infinity, 
-            height: 55, 
-            child: ElevatedButton.icon( 
-              onPressed: () { 
-                Navigator.push( 
-                  context, 
-                  MaterialPageRoute( 
-                    builder: (context) => 
-                        const ActiveWorkoutScreen(), 
-                  ), 
-                ); 
-              }, 
-              icon: const Icon(Icons.play_arrow), 
-              label: const Text( 
-                'Start Workout', 
-                style: TextStyle( 
-                  fontSize: 17, 
-                  fontWeight: FontWeight.bold, 
-                ), 
-              ), 
-              style: ElevatedButton.styleFrom( 
-                backgroundColor: Colors.deepPurpleAccent, 
-                foregroundColor: Colors.white, 
-                shape: RoundedRectangleBorder( 
-                  borderRadius: BorderRadius.circular(16), 
-                ), 
-              ), 
-            ), 
-          ), 
- 
-          const SizedBox(height: 20), 
-        ], 
-      ), 
-    ); 
-  } 
+class WorkoutScreen extends StatefulWidget {
+  const WorkoutScreen({super.key});
+
+  @override
+  State<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
-   
+class _WorkoutScreenState extends State<WorkoutScreen> {
+  final List<Map<String, dynamic>> exercises = [
+    {'name': 'Bench Press', 'muscle': 'Chest', 'sets': 3, 'reps': 10},
+    {'name': 'Shoulder Press', 'muscle': 'Shoulders', 'sets': 3, 'reps': 10},
+    {'name': 'Lat Pulldown', 'muscle': 'Back', 'sets': 3, 'reps': 12},
+    {'name': 'Bicep Curls', 'muscle': 'Biceps', 'sets': 3, 'reps': 12},
+    {'name': 'Tricep Pushdown', 'muscle': 'Triceps', 'sets': 3, 'reps': 12},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    loadCustomExercises();
+  }
+
+  Future<void> loadCustomExercises() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedExercises = prefs.getStringList('custom_exercises');
+
+    if (savedExercises == null) return;
+
+    if (!mounted) return;
+
+    setState(() {
+      for (final item in savedExercises) {
+        final parts = item.split('|');
+
+        if (parts.length == 4) {
+          exercises.add({
+            'name': parts[0],
+            'muscle': parts[1],
+            'sets': int.tryParse(parts[2]) ?? 3,
+            'reps': int.tryParse(parts[3]) ?? 10,
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your Workout',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'Your AI-powered training plan',
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+          ),
+
+          const SizedBox(height: 24),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurpleAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.deepPurpleAccent,
+                        size: 28,
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Today\'s Workout',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Upper Body â€¢ 45 min',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _WorkoutStat(
+                        value: '${exercises.length}',
+                        label: 'Exercises',
+                      ),
+                    ),
+                    const Expanded(
+                      child: _WorkoutStat(value: '3', label: 'Sets'),
+                    ),
+                    const Expanded(
+                      child: _WorkoutStat(value: '45', label: 'Minutes'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          const Text(
+            'Exercises',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 15),
+
+          ...exercises.map(
+            (exercise) => _ExerciseTile(
+              icon: Icons.fitness_center,
+              name: exercise['name'],
+              details:
+                  '${exercise['sets']} sets Ã— '
+                  '${exercise['reps']} reps',
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ActiveWorkoutScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: const Text(
+                'Start Workout',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -2346,9 +2187,7 @@ class _ActionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Material(
@@ -2358,21 +2197,13 @@ class _ActionTile extends StatelessWidget {
             horizontal: 18,
             vertical: 6,
           ),
-          leading: Icon(
-            icon,
-            color: Colors.deepPurpleAccent,
-          ),
+          leading: Icon(icon, color: Colors.deepPurpleAccent),
           title: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Text(subtitle),
-          trailing: const Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-          ),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: onTap,
         ),
       ),
@@ -2384,10 +2215,7 @@ class _WorkoutStat extends StatelessWidget {
   final String value;
   final String label;
 
-  const _WorkoutStat({
-    required this.value,
-    required this.label,
-  });
+  const _WorkoutStat({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -2395,24 +2223,17 @@ class _WorkoutStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade400,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
         ),
       ],
     );
   }
 }
-
 
 class _ExerciseTile extends StatelessWidget {
   final IconData icon;
@@ -2434,36 +2255,23 @@ class _ExerciseTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 6,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.deepPurpleAccent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: Colors.deepPurpleAccent,
-          ),
+          child: Icon(icon, color: Colors.deepPurpleAccent),
         ),
-        title: Text(
-          name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(details),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 15,
-        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 15),
       ),
     );
   }
 }
+
 class ProgressData {
   static const String workoutsKey = 'progress_workouts';
   static const String exercisesKey = 'progress_exercises';
@@ -2486,32 +2294,19 @@ class ProgressData {
         '${now.year}-${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
 
-    final dates =
-        prefs.getStringList(workoutDatesKey) ?? <String>[];
+    final dates = prefs.getStringList(workoutDatesKey) ?? <String>[];
 
     if (!dates.contains(dateKey)) {
       dates.add(dateKey);
     }
 
-    await prefs.setInt(
-      workoutsKey,
-      workouts + 1,
-    );
+    await prefs.setInt(workoutsKey, workouts + 1);
 
-    await prefs.setInt(
-      exercisesKey,
-      oldExercises + exercises,
-    );
+    await prefs.setInt(exercisesKey, oldExercises + exercises);
 
-    await prefs.setDouble(
-      hoursKey,
-      oldHours + duration.inSeconds / 3600.0,
-    );
+    await prefs.setDouble(hoursKey, oldHours + duration.inSeconds / 3600.0);
 
-    await prefs.setStringList(
-      workoutDatesKey,
-      dates,
-    );
+    await prefs.setStringList(workoutDatesKey, dates);
   }
 
   static Future<Map<String, dynamic>> load() async {
@@ -2521,11 +2316,11 @@ class ProgressData {
       'workouts': prefs.getInt(workoutsKey) ?? 0,
       'exercises': prefs.getInt(exercisesKey) ?? 0,
       'hours': prefs.getDouble(hoursKey) ?? 0.0,
-      'dates':
-          prefs.getStringList(workoutDatesKey) ?? <String>[],
+      'dates': prefs.getStringList(workoutDatesKey) ?? <String>[],
     };
   }
 }
+
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
@@ -2534,7 +2329,6 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-
   String weeklyDateLabel(int weekday) {
     final today = DateTime.now();
 
@@ -2542,13 +2336,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
       today.year,
       today.month,
       today.day,
-    ).subtract(
-      Duration(days: today.weekday - 1),
-    );
+    ).subtract(Duration(days: today.weekday - 1));
 
-    final target = monday.add(
-      Duration(days: weekday - 1),
-    );
+    final target = monday.add(Duration(days: weekday - 1));
 
     return '${target.day}/${target.month}';
   }
@@ -2564,13 +2354,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
       today.year,
       today.month,
       today.day,
-    ).subtract(
-      Duration(days: today.weekday - 1),
-    );
+    ).subtract(Duration(days: today.weekday - 1));
 
-    final target = monday.add(
-      Duration(days: weekday - 1),
-    );
+    final target = monday.add(Duration(days: weekday - 1));
 
     final dateKey =
         '${target.year}-${target.month.toString().padLeft(2, '0')}-'
@@ -2586,24 +2372,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final today = DateTime.now();
 
     int streak = 0;
-    DateTime day = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    );
+    DateTime day = DateTime(today.year, today.month, today.day);
 
     while (dates.contains(
       '${day.year}-${day.month.toString().padLeft(2, '0')}-'
       '${day.day.toString().padLeft(2, '0')}',
     )) {
       streak++;
-      day = day.subtract(
-        const Duration(days: 1),
-      );
+      day = day.subtract(const Duration(days: 1));
     }
 
     return streak;
   }
+
   int steps = 0;
   int _initialSteps = 0;
 
@@ -2716,20 +2497,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           const Text(
             'Your Progress',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Track your fitness journey',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
           ),
 
           const SizedBox(height: 24),
@@ -2738,9 +2513,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -2748,8 +2521,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurpleAccent
-                        .withValues(alpha: 0.15),
+                    color: Colors.deepPurpleAccent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -2789,8 +2561,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         pedestrianStatus == 'walking'
                             ? 'Walking'
                             : pedestrianStatus == 'stopped'
-                                ? 'Not walking'
-                                : pedestrianStatus,
+                            ? 'Not walking'
+                            : pedestrianStatus,
                         style: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 13,
@@ -2855,10 +2627,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
           const Text(
             'Weekly Activity',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -2867,14 +2636,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               children: [
-                                _ActivityRow(
+                _ActivityRow(
                   day: 'Monday',
                   date: weeklyDateLabel(1),
                   completed: isWorkoutDay(DateTime.monday),
@@ -2924,10 +2691,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
           const Text(
             'Fitness Summary',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -2936,9 +2700,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Column(
@@ -2946,19 +2708,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 Text(
                   'Keep going! ðŸ’ª',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'You are building a consistent workout routine. '
                   'Complete your weekly workouts to keep improving.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: Colors.grey, height: 1.5),
                 ),
               ],
             ),
@@ -2970,7 +2726,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 }
-
 
 class _ProgressCard extends StatelessWidget {
   final String value;
@@ -2994,26 +2749,16 @@ class _ProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: Colors.deepPurpleAccent,
-            size: 28,
-          ),
+          Icon(icon, color: Colors.deepPurpleAccent, size: 28),
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
           ),
         ],
       ),
@@ -3040,19 +2785,14 @@ class _ActivityRow extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isToday
             ? colorScheme.primary.withValues(alpha: 0.10)
             : colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: isToday
-            ? Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.35),
-              )
+            ? Border.all(color: colorScheme.primary.withValues(alpha: 0.35))
             : null,
       ),
       child: Row(
@@ -3067,12 +2807,8 @@ class _ActivityRow extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              completed
-                  ? Icons.check_circle_outline
-                  : Icons.hotel_outlined,
-              color: completed
-                  ? Colors.green
-                  : Colors.grey,
+              completed ? Icons.check_circle_outline : Icons.hotel_outlined,
+              color: completed ? Colors.green : Colors.grey,
               size: 22,
             ),
           ),
@@ -3127,14 +2863,10 @@ class _ActivityRow extends StatelessWidget {
                 const SizedBox(height: 3),
 
                 Text(
-                  completed
-                      ? 'Workout completed'
-                      : 'Rest / No workout',
+                  completed ? 'Workout completed' : 'Rest / No workout',
                   style: TextStyle(
                     fontSize: 12,
-                    color: completed
-                        ? Colors.green
-                        : Colors.grey.shade500,
+                    color: completed ? Colors.green : Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -3142,12 +2874,8 @@ class _ActivityRow extends StatelessWidget {
           ),
 
           Icon(
-            completed
-                ? Icons.fitness_center
-                : Icons.self_improvement,
-            color: completed
-                ? Colors.green
-                : Colors.grey.shade500,
+            completed ? Icons.fitness_center : Icons.self_improvement,
+            color: completed ? Colors.green : Colors.grey.shade500,
             size: 20,
           ),
         ],
@@ -3155,46 +2883,21 @@ class _ActivityRow extends StatelessWidget {
     );
   }
 }
+
 class ActiveWorkoutScreen extends StatefulWidget {
   const ActiveWorkoutScreen({super.key});
 
   @override
-  State<ActiveWorkoutScreen> createState() =>
-      _ActiveWorkoutScreenState();
+  State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
 class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<Map<String, dynamic>> exercises = [
-    {
-      'name': 'Bench Press',
-      'muscle': 'Chest',
-      'sets': 3,
-      'reps': 10,
-    },
-    {
-      'name': 'Shoulder Press',
-      'muscle': 'Shoulders',
-      'sets': 3,
-      'reps': 10,
-    },
-    {
-      'name': 'Lat Pulldown',
-      'muscle': 'Back',
-      'sets': 3,
-      'reps': 12,
-    },
-    {
-      'name': 'Bicep Curls',
-      'muscle': 'Biceps',
-      'sets': 3,
-      'reps': 12,
-    },
-    {
-      'name': 'Tricep Pushdown',
-      'muscle': 'Triceps',
-      'sets': 3,
-      'reps': 12,
-    },
+    {'name': 'Bench Press', 'muscle': 'Chest', 'sets': 3, 'reps': 10},
+    {'name': 'Shoulder Press', 'muscle': 'Shoulders', 'sets': 3, 'reps': 10},
+    {'name': 'Lat Pulldown', 'muscle': 'Back', 'sets': 3, 'reps': 12},
+    {'name': 'Bicep Curls', 'muscle': 'Biceps', 'sets': 3, 'reps': 12},
+    {'name': 'Tricep Pushdown', 'muscle': 'Triceps', 'sets': 3, 'reps': 12},
   ];
 
   int completedExercises = 0;
@@ -3210,8 +2913,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Future<void> loadCustomExercises() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedExercises =
-        prefs.getStringList('custom_exercises');
+    final savedExercises = prefs.getStringList('custom_exercises');
 
     if (savedExercises == null) return;
 
@@ -3242,9 +2944,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final currentExercise = exercises[currentIndex];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Active Workout'),
-      ),
+      appBar: AppBar(title: const Text('Active Workout')),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -3254,20 +2954,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           children: [
             const Text(
               'Upper Body Workout',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
 
             Text(
               'Follow your AI training plan',
-              style: TextStyle(
-                color: Colors.grey.shade400,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
             ),
 
             const SizedBox(height: 25),
@@ -3277,23 +2971,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               padding: const EdgeInsets.all(20),
 
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
 
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
 
                 children: [
                   const Text(
                     'Current Exercise',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
 
                   const SizedBox(height: 8),
@@ -3311,18 +2999,14 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   Text(
                     '${currentExercise['sets']} sets Ã— '
                     '${currentExercise['reps']} reps',
-                    style: const TextStyle(
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(fontSize: 16),
                   ),
 
                   const SizedBox(height: 5),
 
                   Text(
                     currentExercise['muscle'],
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade400),
                   ),
                 ],
               ),
@@ -3332,10 +3016,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
             const Text(
               'Workout Progress',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 15),
@@ -3344,15 +3025,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               borderRadius: BorderRadius.circular(10),
 
               child: LinearProgressIndicator(
-                value:
-                    completedExercises / exercises.length,
+                value: completedExercises / exercises.length,
                 minHeight: 10,
 
-                backgroundColor:
-                    const Color(0xFF292933),
+                backgroundColor: const Color(0xFF292933),
 
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(
+                valueColor: const AlwaysStoppedAnimation<Color>(
                   Colors.deepPurpleAccent,
                 ),
               ),
@@ -3364,9 +3042,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               '$completedExercises of '
               '${exercises.length} exercises completed',
 
-              style: const TextStyle(
-                color: Colors.grey,
-              ),
+              style: const TextStyle(color: Colors.grey),
             ),
 
             const SizedBox(height: 30),
@@ -3376,46 +3052,40 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               height: 55,
 
               child: ElevatedButton.icon(
-                onPressed:
-                    completedExercises == exercises.length
-                        ? null
-                        : () async {
-                            setState(() {
-                              completedExercises++;
-                            });
+                onPressed: completedExercises == exercises.length
+                    ? null
+                    : () async {
+                        setState(() {
+                          completedExercises++;
+                        });
 
-                            if (completedExercises ==
-                                exercises.length) {
-                              final duration =
-                                  DateTime.now().difference(
-                                workoutStartTime,
-                              );
-                              final messenger = ScaffoldMessenger.of(context);
+                        if (completedExercises == exercises.length) {
+                          final duration = DateTime.now().difference(
+                            workoutStartTime,
+                          );
+                          final messenger = ScaffoldMessenger.of(context);
 
-                              await ProgressData.recordWorkout(
-                                exercises: completedExercises,
-                                duration: duration,
-                              );
+                          await ProgressData.recordWorkout(
+                            exercises: completedExercises,
+                            duration: duration,
+                          );
 
-                              if (!mounted) return;
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'ðŸŽ‰ Workout Completed! Great job!',
-                                  ),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Exercise completed! ðŸ’ª',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'ðŸŽ‰ Workout Completed! Great job!',
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Exercise completed! ðŸ’ª'),
+                            ),
+                          );
+                        }
+                      },
 
                 icon: const Icon(Icons.check),
 
@@ -3431,14 +3101,12 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 ),
 
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Colors.deepPurpleAccent,
+                  backgroundColor: Colors.deepPurpleAccent,
 
                   foregroundColor: Colors.white,
 
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
@@ -3451,13 +3119,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     );
   }
 }
+
 class ProfileScreen extends StatefulWidget {
   final ValueChanged<ThemeMode> onThemeChanged;
 
-  const ProfileScreen({
-    super.key,
-    required this.onThemeChanged,
-  });
+  const ProfileScreen({super.key, required this.onThemeChanged});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -3478,8 +3144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     setState(() {
-      selectedGoal =
-          prefs.getString('user_goal') ?? 'Build strength';
+      selectedGoal = prefs.getString('user_goal') ?? 'Build strength';
     });
   }
 
@@ -3492,20 +3157,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           const Text(
             'My Profile',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Manage your fitness profile',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
           ),
 
           const SizedBox(height: 25),
@@ -3515,8 +3174,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 CircleAvatar(
                   radius: 45,
-                  backgroundColor:
-                      Colors.deepPurpleAccent.withValues(alpha: 0.15),
+                  backgroundColor: Colors.deepPurpleAccent.withValues(
+                    alpha: 0.15,
+                  ),
                   child: const Icon(
                     Icons.person,
                     size: 50,
@@ -3528,19 +3188,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const Text(
                   'Fitness User',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 4),
 
                 Text(
                   'AI Fitness Member',
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade400),
                 ),
               ],
             ),
@@ -3550,10 +3205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const Text(
             'Fitness Information',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -3583,9 +3235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.settings_outlined,
             title: 'Settings',
             subtitle: 'App preferences and options',
-            screen: SettingsScreen(
-  onThemeChanged: widget.onThemeChanged,
-),
+            screen: SettingsScreen(onThemeChanged: widget.onThemeChanged),
           ),
 
           const SizedBox(height: 20),
@@ -3624,28 +3274,17 @@ class _ProfileTile extends StatelessWidget {
             horizontal: 18,
             vertical: 7,
           ),
-          leading: Icon(
-            icon,
-            color: Colors.deepPurpleAccent,
-            size: 27,
-          ),
+          leading: Icon(icon, color: Colors.deepPurpleAccent, size: 27),
           title: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Text(subtitle),
-          trailing: const Icon(
-            Icons.arrow_forward_ios,
-            size: 15,
-          ),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 15),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => screen,
-              ),
+              MaterialPageRoute(builder: (context) => screen),
             );
           },
         ),
@@ -3662,8 +3301,7 @@ class PersonalInformationScreen extends StatefulWidget {
       _PersonalInformationScreenState();
 }
 
-class _PersonalInformationScreenState
-    extends State<PersonalInformationScreen> {
+class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   String userName = 'Fitness User';
   String userAge = 'Not added';
   String userHeight = 'Not added';
@@ -3682,16 +3320,11 @@ class _PersonalInformationScreenState
     if (!mounted) return;
 
     setState(() {
-      userName =
-          prefs.getString('user_name') ?? 'Fitness User';
-      userAge =
-          prefs.getString('user_age') ?? 'Not added';
-      userHeight =
-          prefs.getString('user_height') ?? 'Not added';
-      userWeight =
-          prefs.getString('user_weight') ?? 'Not added';
-      userGoal =
-          prefs.getString('user_goal') ?? 'Build strength';
+      userName = prefs.getString('user_name') ?? 'Fitness User';
+      userAge = prefs.getString('user_age') ?? 'Not added';
+      userHeight = prefs.getString('user_height') ?? 'Not added';
+      userWeight = prefs.getString('user_weight') ?? 'Not added';
+      userGoal = prefs.getString('user_goal') ?? 'Build strength';
     });
   }
 
@@ -3703,7 +3336,8 @@ class _PersonalInformationScreenState
     TextInputType keyboardType = TextInputType.text,
   }) async {
     final controller = TextEditingController(
-      text: currentValue == 'Not added' ||
+      text:
+          currentValue == 'Not added' ||
               currentValue == 'Fitness User' ||
               currentValue == 'Build strength'
           ? ''
@@ -3719,9 +3353,7 @@ class _PersonalInformationScreenState
             controller: controller,
             autofocus: false,
             keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: 'Your $title',
-            ),
+            decoration: InputDecoration(hintText: 'Your $title'),
           ),
           actions: [
             TextButton(
@@ -3756,19 +3388,15 @@ class _PersonalInformationScreenState
       onSaved(newValue);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$title saved: $newValue'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$title saved: $newValue')));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Personal Information'),
-      ),
+      appBar: AppBar(title: const Text('Personal Information')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -3776,20 +3404,14 @@ class _PersonalInformationScreenState
           children: [
             const Text(
               'Your Information',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
 
             Text(
               'Add your basic fitness information',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade400,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
             ),
 
             const SizedBox(height: 25),
@@ -3912,22 +3534,13 @@ class _InformationCard extends StatelessWidget {
             horizontal: 18,
             vertical: 8,
           ),
-          leading: Icon(
-            icon,
-            color: Colors.deepPurpleAccent,
-            size: 27,
-          ),
+          leading: Icon(icon, color: Colors.deepPurpleAccent, size: 27),
           title: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Text(value),
-          trailing: const Icon(
-            Icons.arrow_forward_ios,
-            size: 15,
-          ),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 15),
           onTap: onTap,
         ),
       ),
@@ -3939,12 +3552,10 @@ class FitnessGoalScreen extends StatefulWidget {
   const FitnessGoalScreen({super.key});
 
   @override
-  State<FitnessGoalScreen> createState() =>
-      _FitnessGoalScreenState();
+  State<FitnessGoalScreen> createState() => _FitnessGoalScreenState();
 }
 
-class _FitnessGoalScreenState
-    extends State<FitnessGoalScreen> {
+class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
   String selectedGoal = 'Build strength';
 
   final List<String> goals = [
@@ -3967,92 +3578,75 @@ class _FitnessGoalScreenState
     if (!mounted) return;
 
     setState(() {
-      selectedGoal =
-          prefs.getString('user_goal') ?? 'Build strength';
+      selectedGoal = prefs.getString('user_goal') ?? 'Build strength';
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fitness Goal'),
-      ),
+      appBar: AppBar(title: const Text('Fitness Goal')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
             'Choose Your Goal',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Select the goal that best matches your fitness journey.',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
           ),
 
           const SizedBox(height: 25),
 
           RadioGroup<String>(
-  groupValue: selectedGoal,
-  onChanged: (value) {
-    if (value == null) return;
+            groupValue: selectedGoal,
+            onChanged: (value) {
+              if (value == null) return;
 
-    setState(() {
-      selectedGoal = value;
-    });
-  },
-  child: Column(
-    children: [
-      ...goals.map(
-        (goal) => Card(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: RadioListTile<String>(
-            value: goal,
-            activeColor: Colors.deepPurpleAccent,
-            title: Text(
-              goal,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              setState(() {
+                selectedGoal = value;
+              });
+            },
+            child: Column(
+              children: [
+                ...goals.map(
+                  (goal) => Card(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: RadioListTile<String>(
+                      value: goal,
+                      activeColor: Colors.deepPurpleAccent,
+                      title: Text(
+                        goal,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ),
-    ],
-  ),
-),
           const SizedBox(height: 15),
 
           SizedBox(
             height: 55,
             child: ElevatedButton(
               onPressed: () async {
-                final prefs =
-                    await SharedPreferences.getInstance();
+                final prefs = await SharedPreferences.getInstance();
 
-                await prefs.setString(
-                  'user_goal',
-                  selectedGoal,
-                );
-              
+                await prefs.setString('user_goal', selectedGoal);
+
                 if (!context.mounted) return;
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Fitness goal saved: $selectedGoal',
-                    ),
-                  ),
+                  SnackBar(content: Text('Fitness goal saved: $selectedGoal')),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -4064,10 +3658,7 @@ class _FitnessGoalScreenState
               ),
               child: const Text(
                 'Save Goal',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -4081,12 +3672,10 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState
-    extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> {
   bool workoutReminders = true;
   bool progressUpdates = true;
   bool aiCoachTips = true;
@@ -4094,28 +3683,20 @@ class _NotificationsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-      ),
+      appBar: AppBar(title: const Text('Notifications')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
             'Notification Settings',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Choose which notifications you want to receive.',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
           ),
 
           const SizedBox(height: 25),
@@ -4182,12 +3763,7 @@ class _NotificationTile extends StatelessWidget {
       child: SwitchListTile(
         value: value,
         activeThumbColor: Colors.deepPurpleAccent,
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
         onChanged: onChanged,
       ),
@@ -4198,10 +3774,7 @@ class _NotificationTile extends StatelessWidget {
 class SettingsScreen extends StatefulWidget {
   final ValueChanged<ThemeMode> onThemeChanged;
 
-  const SettingsScreen({
-    super.key,
-    required this.onThemeChanged,
-  });
+  const SettingsScreen({super.key, required this.onThemeChanged});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -4268,167 +3841,155 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       appearance = selected;
     });
-widget.onThemeChanged(
-  selected == 'Light mode'
-      ? ThemeMode.light
-      : selected == 'System default'
+    widget.onThemeChanged(
+      selected == 'Light mode'
+          ? ThemeMode.light
+          : selected == 'System default'
           ? ThemeMode.system
           : ThemeMode.dark,
-);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Appearance saved: $selected'),
-      ),
     );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Appearance saved: $selected')));
   }
 
   Future<void> chooseLanguage() async {
-  final selected = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) {
-      return SimpleDialog(
-        title: const Text('Choose Language'),
-        children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'English');
-            },
-            child: const Text('English'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Urdu');
-            },
-            child: const Text('Urdu'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Sindhi');
-            },
-            child: const Text('Sindhi'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Punjabi');
-            },
-            child: const Text('Punjabi'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Pashto');
-            },
-            child: const Text('Pashto'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Balochi');
-            },
-            child: const Text('Balochi'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Saraiki');
-            },
-            child: const Text('Saraiki'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Hindko');
-            },
-            child: const Text('Hindko'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Kashmiri');
-            },
-            child: const Text('Kashmiri'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Shina');
-            },
-            child: const Text('Shina'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Balti');
-            },
-            child: const Text('Balti'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Brahui');
-            },
-            child: const Text('Brahui'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Wakhi');
-            },
-            child: const Text('Wakhi'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Khowar');
-            },
-            child: const Text('Khowar'),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext, 'Burushaski');
-            },
-            child: const Text('Burushaski'),
-          ),
-        ],
-      );
-    },
-  );
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return SimpleDialog(
+          title: const Text('Choose Language'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'English');
+              },
+              child: const Text('English'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Urdu');
+              },
+              child: const Text('Urdu'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Sindhi');
+              },
+              child: const Text('Sindhi'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Punjabi');
+              },
+              child: const Text('Punjabi'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Pashto');
+              },
+              child: const Text('Pashto'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Balochi');
+              },
+              child: const Text('Balochi'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Saraiki');
+              },
+              child: const Text('Saraiki'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Hindko');
+              },
+              child: const Text('Hindko'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Kashmiri');
+              },
+              child: const Text('Kashmiri'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Shina');
+              },
+              child: const Text('Shina'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Balti');
+              },
+              child: const Text('Balti'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Brahui');
+              },
+              child: const Text('Brahui'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Wakhi');
+              },
+              child: const Text('Wakhi'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Khowar');
+              },
+              child: const Text('Khowar'),
+            ),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext, 'Burushaski');
+              },
+              child: const Text('Burushaski'),
+            ),
+          ],
+        );
+      },
+    );
 
-  if (selected == null) return;
+    if (selected == null) return;
 
-  final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-  await prefs.setString('language', selected);
-  L.set(selected);
+    await prefs.setString('language', selected);
+    L.set(selected);
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() {
-    language = selected;
-  });
+    setState(() {
+      language = selected;
+    });
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Language saved: $selected'),
-    ),
-  );
-}
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Language saved: $selected')));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
             'App Settings',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Manage your AI Fitness app preferences.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
           ),
 
           const SizedBox(height: 25),
@@ -4454,9 +4015,7 @@ widget.onThemeChanged(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const PrivacyScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const PrivacyScreen()),
               );
             },
           ),
@@ -4468,9 +4027,7 @@ widget.onThemeChanged(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AboutAIScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const AboutAIScreen()),
               );
             },
           ),
@@ -4502,31 +4059,17 @@ class _SettingsTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 7,
-        ),
-        leading: Icon(
-          icon,
-          color: Colors.deepPurpleAccent,
-          size: 27,
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        leading: Icon(icon, color: Colors.deepPurpleAccent, size: 27),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 15,
-        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 15),
         onTap: onTap,
       ),
     );
   }
 }
+
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key});
 
@@ -4543,28 +4086,20 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Privacy'),
-      ),
+      appBar: AppBar(title: const Text('Privacy')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
             'Privacy & Data',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
 
           Text(
             'Manage your privacy and personal data.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
           ),
 
           const SizedBox(height: 25),
@@ -4573,9 +4108,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Column(
@@ -4583,20 +4116,14 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               children: [
                 Text(
                   'Your Privacy',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 10),
                 Text(
                   'AI Fitness currently stores profile information '
                   'and app preferences locally on your device. '
                   'Cloud storage is not currently connected.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: Colors.grey, height: 1.5),
                 ),
               ],
             ),
@@ -4606,10 +4133,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
 
           const Text(
             'Data Information',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -4627,10 +4151,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
 
           const Text(
             'Manage Your Data',
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 15),
@@ -4718,38 +4239,34 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   // --------------------------------------------------
 
   Future<void> _exportData() async {
-  final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-  final data = {
-    'name': prefs.getString('user_name') ?? '',
-    'age': prefs.getString('user_age') ?? '',
-    'height': prefs.getString('user_height') ?? '',
-    'weight': prefs.getString('user_weight') ?? '',
-    'fitnessGoal': prefs.getString('user_goal') ?? '',
-    'appearance': prefs.getString('appearance') ?? 'Dark mode',
-    'language': prefs.getString('language') ?? 'English',
-    'customExercises':
-        prefs.getStringList('custom_exercises') ?? [],
-    'hiddenDefaultExercises':
-        prefs.getStringList('hidden_default_exercises') ?? [],
-  };
+    final data = {
+      'name': prefs.getString('user_name') ?? '',
+      'age': prefs.getString('user_age') ?? '',
+      'height': prefs.getString('user_height') ?? '',
+      'weight': prefs.getString('user_weight') ?? '',
+      'fitnessGoal': prefs.getString('user_goal') ?? '',
+      'appearance': prefs.getString('appearance') ?? 'Dark mode',
+      'language': prefs.getString('language') ?? 'English',
+      'customExercises': prefs.getStringList('custom_exercises') ?? [],
+      'hiddenDefaultExercises':
+          prefs.getStringList('hidden_default_exercises') ?? [],
+    };
 
-  final jsonData = const JsonEncoder.withIndent('  ').convert(data);
+    final jsonData = const JsonEncoder.withIndent('  ').convert(data);
 
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File('${directory.path}/fitai_data.json');
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/fitai_data.json');
 
-  await file.writeAsString(jsonData);
+    await file.writeAsString(jsonData);
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  await SharePlus.instance.share(
-    ShareParams(
-      files: [XFile(file.path)],
-      text: 'My FitAI data',
-    ),
-  );
-}
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], text: 'My FitAI data'),
+    );
+  }
 
   // --------------------------------------------------
   // DELETE ACCOUNT
@@ -4806,11 +4323,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Your local FitAI data has been deleted.',
-        ),
-      ),
+      const SnackBar(content: Text('Your local FitAI data has been deleted.')),
     );
   }
 
@@ -4850,99 +4363,92 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   // PERMISSIONS
   // --------------------------------------------------
 
- Future<void> _showPermissions() async {
-  final activityStatus =
-      await Permission.activityRecognition.status;
-  final cameraStatus =
-      await Permission.camera.status;
-  final notificationStatus =
-      await Permission.notification.status;
+  Future<void> _showPermissions() async {
+    final activityStatus = await Permission.activityRecognition.status;
+    final cameraStatus = await Permission.camera.status;
+    final notificationStatus = await Permission.notification.status;
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  showDialog(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: const Text('Permissions'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PermissionRow(
-              icon: Icons.directions_walk,
-              title: 'Physical Activity',
-              subtitle: 'Used for step tracking',
-              status: activityStatus.isGranted
-                  ? 'Allowed âœ“'
-                  : 'Allow >',
-              allowed: activityStatus.isGranted,
-              onTap: () async {
-                await Permission.activityRecognition.request();
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Permissions'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PermissionRow(
+                icon: Icons.directions_walk,
+                title: 'Physical Activity',
+                subtitle: 'Used for step tracking',
+                status: activityStatus.isGranted ? 'Allowed âœ“' : 'Allow >',
+                allowed: activityStatus.isGranted,
+                onTap: () async {
+                  await Permission.activityRecognition.request();
 
-                if (!dialogContext.mounted) return;
+                  if (!dialogContext.mounted) return;
 
+                  Navigator.pop(dialogContext);
+                  _showPermissions();
+                },
+              ),
+
+              _PermissionRow(
+                icon: Icons.camera_alt_outlined,
+                title: 'Camera',
+                subtitle: 'Used for workout form checking',
+                status: cameraStatus.isGranted ? 'Allowed âœ“' : 'Allow >',
+                allowed: cameraStatus.isGranted,
+                onTap: () async {
+                  await Permission.camera.request();
+
+                  if (!dialogContext.mounted) return;
+
+                  Navigator.pop(dialogContext);
+                  _showPermissions();
+                },
+              ),
+
+              _PermissionRow(
+                icon: Icons.notifications_outlined,
+                title: 'Notifications',
+                subtitle: 'Used for workout reminders',
+                status: notificationStatus.isGranted
+                    ? 'Allowed âœ“'
+                    : 'Allow >',
+                allowed: notificationStatus.isGranted,
+                onTap: () async {
+                  await Permission.notification.request();
+
+                  if (!dialogContext.mounted) return;
+
+                  Navigator.pop(dialogContext);
+                  _showPermissions();
+                },
+              ),
+
+              const _PermissionRow(
+                icon: Icons.location_on_outlined,
+                title: 'Location',
+                subtitle: 'Not currently required',
+                status: 'Not required',
+                allowed: false,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
                 Navigator.pop(dialogContext);
-                _showPermissions();
               },
-            ),
-
-            _PermissionRow(
-              icon: Icons.camera_alt_outlined,
-              title: 'Camera',
-              subtitle: 'Used for workout form checking',
-              status: cameraStatus.isGranted
-                  ? 'Allowed âœ“'
-                  : 'Allow >',
-              allowed: cameraStatus.isGranted,
-              onTap: () async {
-                await Permission.camera.request();
-
-                if (!dialogContext.mounted) return;
-
-                Navigator.pop(dialogContext);
-                _showPermissions();
-              },
-            ),
-
-            _PermissionRow(
-              icon: Icons.notifications_outlined,
-              title: 'Notifications',
-              subtitle: 'Used for workout reminders',
-              status: notificationStatus.isGranted
-                  ? 'Allowed âœ“'
-                  : 'Allow >',
-              allowed: notificationStatus.isGranted,
-              onTap: () async {
-                await Permission.notification.request();
-
-                if (!dialogContext.mounted) return;
-
-                Navigator.pop(dialogContext);
-                _showPermissions();
-              },
-            ),
-
-            const _PermissionRow(
-              icon: Icons.location_on_outlined,
-              title: 'Location',
-              subtitle: 'Not currently required',
-              status: 'Not required',
-              allowed: false,
+              child: const Text('Close'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Close'),
-          ),
-        ],
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }
 // --------------------------------------------------
 // PRIVACY TILE
@@ -4968,38 +4474,24 @@ class _PrivacyTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 7,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
         leading: Icon(
           icon,
           color: iconColor ?? Colors.deepPurpleAccent,
           size: 27,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 15,
-        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 15),
         onTap: onTap,
       ),
     );
   }
 }
-
 
 // --------------------------------------------------
 // PERMISSION ROW
@@ -5032,10 +4524,7 @@ class _PermissionRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              color: Colors.deepPurpleAccent,
-            ),
+            Icon(icon, color: Colors.deepPurpleAccent),
 
             const SizedBox(width: 12),
 
@@ -5045,19 +4534,14 @@ class _PermissionRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
 
                   const SizedBox(height: 3),
 
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -5068,9 +4552,7 @@ class _PermissionRow extends StatelessWidget {
             Text(
               status,
               style: TextStyle(
-                color: allowed
-                    ? Colors.green
-                    : Colors.deepPurpleAccent,
+                color: allowed ? Colors.green : Colors.deepPurpleAccent,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -5081,15 +4563,14 @@ class _PermissionRow extends StatelessWidget {
     );
   }
 }
+
 class AboutAIScreen extends StatelessWidget {
   const AboutAIScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('About AI Fitness'),
-      ),
+      appBar: AppBar(title: const Text('About AI Fitness')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -5098,8 +4579,9 @@ class AboutAIScreen extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 45,
-                  backgroundColor:
-                      Colors.deepPurpleAccent.withValues(alpha: 0.15),
+                  backgroundColor: Colors.deepPurpleAccent.withValues(
+                    alpha: 0.15,
+                  ),
                   child: const Icon(
                     Icons.fitness_center,
                     size: 50,
@@ -5111,10 +4593,7 @@ class AboutAIScreen extends StatelessWidget {
 
                 const Text(
                   'AI Fitness',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 8),
@@ -5122,10 +4601,7 @@ class AboutAIScreen extends StatelessWidget {
                 Text(
                   'AI-powered fitness and wellness platform',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 15),
                 ),
               ],
             ),
@@ -5144,36 +4620,22 @@ class AboutAIScreen extends StatelessWidget {
               children: [
                 Text(
                   'Version',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 6),
-                Text(
-                  '1.0.0',
-                  style: TextStyle(
-                    color: Colors.grey,
-                  ),
-                ),
+                Text('1.0.0', style: TextStyle(color: Colors.grey)),
 
                 SizedBox(height: 20),
 
                 Text(
                   'About',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 6),
                 Text(
                   'AI Fitness helps users manage workouts, '
                   'fitness goals, progress and personalized training.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: Colors.grey, height: 1.5),
                 ),
               ],
             ),
@@ -5183,47 +4645,21 @@ class AboutAIScreen extends StatelessWidget {
     );
   }
 }
+
 class ExerciseLibraryScreen extends StatefulWidget {
   const ExerciseLibraryScreen({super.key});
 
   @override
-  State<ExerciseLibraryScreen> createState() =>
-      _ExerciseLibraryScreenState();
+  State<ExerciseLibraryScreen> createState() => _ExerciseLibraryScreenState();
 }
 
-class _ExerciseLibraryScreenState
-    extends State<ExerciseLibraryScreen> {
+class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   final List<Map<String, dynamic>> defaultExercises = [
-    {
-      'name': 'Bench Press',
-      'muscle': 'Chest',
-      'sets': 3,
-      'reps': 10,
-    },
-    {
-      'name': 'Shoulder Press',
-      'muscle': 'Shoulders',
-      'sets': 3,
-      'reps': 10,
-    },
-    {
-      'name': 'Lat Pulldown',
-      'muscle': 'Back',
-      'sets': 3,
-      'reps': 12,
-    },
-    {
-      'name': 'Bicep Curls',
-      'muscle': 'Biceps',
-      'sets': 3,
-      'reps': 12,
-    },
-    {
-      'name': 'Tricep Pushdown',
-      'muscle': 'Triceps',
-      'sets': 3,
-      'reps': 12,
-    },
+    {'name': 'Bench Press', 'muscle': 'Chest', 'sets': 3, 'reps': 10},
+    {'name': 'Shoulder Press', 'muscle': 'Shoulders', 'sets': 3, 'reps': 10},
+    {'name': 'Lat Pulldown', 'muscle': 'Back', 'sets': 3, 'reps': 12},
+    {'name': 'Bicep Curls', 'muscle': 'Biceps', 'sets': 3, 'reps': 12},
+    {'name': 'Tricep Pushdown', 'muscle': 'Triceps', 'sets': 3, 'reps': 12},
   ];
 
   List<Map<String, dynamic>> customExercises = [];
@@ -5239,11 +4675,9 @@ class _ExerciseLibraryScreenState
   Future<void> loadExercises() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedExercises =
-        prefs.getStringList('custom_exercises') ?? [];
+    final savedExercises = prefs.getStringList('custom_exercises') ?? [];
 
-    final hidden =
-        prefs.getStringList('hidden_default_exercises') ?? [];
+    final hidden = prefs.getStringList('hidden_default_exercises') ?? [];
 
     if (!mounted) return;
 
@@ -5254,12 +4688,8 @@ class _ExerciseLibraryScreenState
         return {
           'name': parts.isNotEmpty ? parts[0] : 'Exercise',
           'muscle': parts.length > 1 ? parts[1] : 'Custom',
-          'sets': parts.length > 2
-              ? int.tryParse(parts[2]) ?? 3
-              : 3,
-          'reps': parts.length > 3
-              ? int.tryParse(parts[3]) ?? 10
-              : 10,
+          'sets': parts.length > 2 ? int.tryParse(parts[2]) ?? 3 : 3,
+          'reps': parts.length > 3 ? int.tryParse(parts[3]) ?? 10 : 10,
         };
       }).toList();
 
@@ -5277,10 +4707,7 @@ class _ExerciseLibraryScreenState
           '${exercise['reps']}';
     }).toList();
 
-    await prefs.setStringList(
-      'custom_exercises',
-      data,
-    );
+    await prefs.setStringList('custom_exercises', data);
   }
 
   Future<void> saveHiddenDefaults() async {
@@ -5309,29 +4736,21 @@ class _ExerciseLibraryScreenState
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Exercise name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Exercise name'),
                 ),
                 TextField(
                   controller: muscleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Muscle group',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Muscle group'),
                 ),
                 TextField(
                   controller: setsController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Sets',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Sets'),
                 ),
                 TextField(
                   controller: repsController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Repetitions',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Repetitions'),
                 ),
               ],
             ),
@@ -5349,26 +4768,20 @@ class _ExerciseLibraryScreenState
 
                 if (name.isEmpty) return;
 
-                final muscle =
-                    muscleController.text.trim().isEmpty
-                        ? 'Custom'
-                        : muscleController.text.trim();
+                final muscle = muscleController.text.trim().isEmpty
+                    ? 'Custom'
+                    : muscleController.text.trim();
 
-                final sets =
-                    int.tryParse(setsController.text) ?? 3;
+                final sets = int.tryParse(setsController.text) ?? 3;
 
-                final reps =
-                    int.tryParse(repsController.text) ?? 10;
+                final reps = int.tryParse(repsController.text) ?? 10;
 
-                Navigator.pop(
-                  dialogContext,
-                  {
-                    'name': name,
-                    'muscle': muscle,
-                    'sets': sets,
-                    'reps': reps,
-                  },
-                );
+                Navigator.pop(dialogContext, {
+                  'name': name,
+                  'muscle': muscle,
+                  'sets': sets,
+                  'reps': reps,
+                });
               },
               child: const Text('Add Exercise'),
             ),
@@ -5388,9 +4801,7 @@ class _ExerciseLibraryScreenState
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exercise added successfully! ðŸ’ª'),
-      ),
+      const SnackBar(content: Text('Exercise added successfully! ðŸ’ª')),
     );
   }
 
@@ -5438,29 +4849,23 @@ class _ExerciseLibraryScreenState
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exercise deleted.'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Exercise deleted.')));
   }
 
   Future<void> editCustomExercise(int index) async {
     final exercise = customExercises[index];
 
-    final nameController =
-        TextEditingController(text: exercise['name']);
+    final nameController = TextEditingController(text: exercise['name']);
 
-    final muscleController =
-        TextEditingController(text: exercise['muscle']);
+    final muscleController = TextEditingController(text: exercise['muscle']);
 
-    final setsController =
-        TextEditingController(
+    final setsController = TextEditingController(
       text: exercise['sets'].toString(),
     );
 
-    final repsController =
-        TextEditingController(
+    final repsController = TextEditingController(
       text: exercise['reps'].toString(),
     );
 
@@ -5475,29 +4880,21 @@ class _ExerciseLibraryScreenState
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Exercise name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Exercise name'),
                 ),
                 TextField(
                   controller: muscleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Muscle group',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Muscle group'),
                 ),
                 TextField(
                   controller: setsController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Sets',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Sets'),
                 ),
                 TextField(
                   controller: repsController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Repetitions',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Repetitions'),
                 ),
               ],
             ),
@@ -5515,20 +4912,14 @@ class _ExerciseLibraryScreenState
 
                 if (name.isEmpty) return;
 
-                Navigator.pop(
-                  dialogContext,
-                  {
-                    'name': name,
-                    'muscle':
-                        muscleController.text.trim().isEmpty
-                            ? 'Custom'
-                            : muscleController.text.trim(),
-                    'sets':
-                        int.tryParse(setsController.text) ?? 3,
-                    'reps':
-                        int.tryParse(repsController.text) ?? 10,
-                  },
-                );
+                Navigator.pop(dialogContext, {
+                  'name': name,
+                  'muscle': muscleController.text.trim().isEmpty
+                      ? 'Custom'
+                      : muscleController.text.trim(),
+                  'sets': int.tryParse(setsController.text) ?? 3,
+                  'reps': int.tryParse(repsController.text) ?? 10,
+                });
               },
               child: const Text('Save Changes'),
             ),
@@ -5548,14 +4939,11 @@ class _ExerciseLibraryScreenState
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exercise updated successfully!'),
-      ),
+      const SnackBar(content: Text('Exercise updated successfully!')),
     );
   }
 
-  Future<void> hideDefaultExercise(
-      Map<String, dynamic> exercise) async {
+  Future<void> hideDefaultExercise(Map<String, dynamic> exercise) async {
     final name = exercise['name'] as String;
 
     setState(() {
@@ -5567,14 +4955,11 @@ class _ExerciseLibraryScreenState
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name hidden from Exercise Library.'),
-      ),
+      SnackBar(content: Text('$name hidden from Exercise Library.')),
     );
   }
 
-  Future<void> showDefaultExercise(
-      Map<String, dynamic> exercise) async {
+  Future<void> showDefaultExercise(Map<String, dynamic> exercise) async {
     final name = exercise['name'] as String;
 
     setState(() {
@@ -5585,11 +4970,9 @@ class _ExerciseLibraryScreenState
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name restored.'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$name restored.')));
   }
 
   Widget buildExerciseTile(
@@ -5600,16 +4983,11 @@ class _ExerciseLibraryScreenState
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         leading: const Icon(
           Icons.fitness_center,
           color: Colors.deepPurpleAccent,
@@ -5617,9 +4995,7 @@ class _ExerciseLibraryScreenState
         ),
         title: Text(
           exercise['name'],
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
           '${exercise['muscle']} â€¢ '
@@ -5628,13 +5004,11 @@ class _ExerciseLibraryScreenState
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
-            if (value == 'edit' &&
-                customIndex != null) {
+            if (value == 'edit' && customIndex != null) {
               editCustomExercise(customIndex);
             }
 
-            if (value == 'delete' &&
-                customIndex != null) {
+            if (value == 'delete' && customIndex != null) {
               deleteCustomExercise(customIndex);
             }
 
@@ -5672,9 +5046,7 @@ class _ExerciseLibraryScreenState
               ];
             }
 
-            final isHidden =
-                hiddenDefaultExercises
-                    .contains(exercise['name']);
+            final isHidden = hiddenDefaultExercises.contains(exercise['name']);
 
             return [
               PopupMenuItem(
@@ -5687,11 +5059,7 @@ class _ExerciseLibraryScreenState
                           : Icons.visibility_off_outlined,
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      isHidden
-                          ? 'Restore'
-                          : 'Hide',
-                    ),
+                    Text(isHidden ? 'Restore' : 'Hide'),
                   ],
                 ),
               ),
@@ -5705,21 +5073,13 @@ class _ExerciseLibraryScreenState
   @override
   Widget build(BuildContext context) {
     final visibleDefaults = defaultExercises
-        .where(
-          (exercise) => !hiddenDefaultExercises
-              .contains(exercise['name']),
-        )
+        .where((exercise) => !hiddenDefaultExercises.contains(exercise['name']))
         .toList();
-final hiddenDefaults = defaultExercises
-    .where(
-      (exercise) => hiddenDefaultExercises
-          .contains(exercise['name']),
-    )
-    .toList();
+    final hiddenDefaults = defaultExercises
+        .where((exercise) => hiddenDefaultExercises.contains(exercise['name']))
+        .toList();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Exercise Library'),
-      ),
+      appBar: AppBar(title: const Text('Exercise Library')),
 
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -5727,50 +5087,35 @@ final hiddenDefaults = defaultExercises
           if (visibleDefaults.isNotEmpty) ...[
             const Text(
               'Default Exercises',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 15),
 
             ...visibleDefaults.map(
-              (exercise) => buildExerciseTile(
-                exercise,
-                isCustom: false,
-              ),
+              (exercise) => buildExerciseTile(exercise, isCustom: false),
             ),
           ],
-if (hiddenDefaults.isNotEmpty) ...[
-  const SizedBox(height: 15),
+          if (hiddenDefaults.isNotEmpty) ...[
+            const SizedBox(height: 15),
 
-  const Text(
-    'Hidden Exercises',
-    style: TextStyle(
-      fontSize: 21,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
+            const Text(
+              'Hidden Exercises',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
 
-  const SizedBox(height: 15),
+            const SizedBox(height: 15),
 
-  ...hiddenDefaults.map(
-    (exercise) => buildExerciseTile(
-      exercise,
-      isCustom: false,
-    ),
-  ),
-],
+            ...hiddenDefaults.map(
+              (exercise) => buildExerciseTile(exercise, isCustom: false),
+            ),
+          ],
           if (customExercises.isNotEmpty) ...[
             const SizedBox(height: 15),
 
             const Text(
               'My Exercises',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 15),
@@ -5785,17 +5130,14 @@ if (hiddenDefaults.isNotEmpty) ...[
           ],
 
           if (visibleDefaults.isEmpty &&
-    hiddenDefaults.isEmpty &&
-    customExercises.isEmpty)
+              hiddenDefaults.isEmpty &&
+              customExercises.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 50),
               child: Center(
                 child: Text(
                   'No exercises available.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ),
             ),
@@ -5804,8 +5146,7 @@ if (hiddenDefaults.isNotEmpty) ...[
         ],
       ),
 
-      floatingActionButton:
-          FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: addCustomExercise,
         icon: const Icon(Icons.add),
         label: const Text('Add Exercise'),
@@ -5813,6 +5154,7 @@ if (hiddenDefaults.isNotEmpty) ...[
     );
   }
 }
+
 class AIFormCheckScreen extends StatefulWidget {
   const AIFormCheckScreen({super.key});
 
@@ -5916,9 +5258,7 @@ class _AIFormCheckScreenState extends State<AIFormCheckScreen> {
       appBar: AppBar(
         title: const Text(
           'AI Form Check',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: _isCameraReady && _cameraController != null
@@ -5941,8 +5281,7 @@ class _AIFormCheckScreenState extends State<AIFormCheckScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 exerciseName,
@@ -5976,16 +5315,13 @@ class _AIFormCheckScreenState extends State<AIFormCheckScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceAround,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               Column(
                                 children: [
                                   const Text(
                                     'Reps',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                    ),
+                                    style: TextStyle(color: Colors.white70),
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
@@ -6002,9 +5338,7 @@ class _AIFormCheckScreenState extends State<AIFormCheckScreen> {
                                 children: [
                                   const Text(
                                     'Exercise',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                    ),
+                                    style: TextStyle(color: Colors.white70),
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
@@ -6032,52 +5366,10 @@ class _AIFormCheckScreenState extends State<AIFormCheckScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 20),
-                  Text(
-                    formStatus,
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(formStatus, textAlign: TextAlign.center),
                 ],
               ),
             ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

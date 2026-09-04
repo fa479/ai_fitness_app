@@ -13,6 +13,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -39,6 +40,53 @@ class ChatMessage {
     this.fromCloud = false,
     this.personalized = false,
   });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+        'timestamp': timestamp.toIso8601String(),
+        'fromCloud': fromCloud,
+        'personalized': personalized,
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
+        text: j['text'] as String,
+        isUser: j['isUser'] as bool,
+        timestamp: DateTime.parse(j['timestamp'] as String),
+        fromCloud: j['fromCloud'] as bool? ?? false,
+        personalized: j['personalized'] as bool? ?? false,
+      );
+}
+
+class _ChatConversation {
+  final String id;
+  final String title;
+  final List<ChatMessage> messages;
+  final DateTime createdAt;
+
+  _ChatConversation({
+    required this.id,
+    required this.title,
+    required this.messages,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'createdAt': createdAt.toIso8601String(),
+        'messages': messages.map((m) => m.toJson()).toList(),
+      };
+
+  factory _ChatConversation.fromJson(Map<String, dynamic> j) =>
+      _ChatConversation(
+        id: j['id'] as String,
+        title: j['title'] as String,
+        createdAt: DateTime.parse(j['createdAt'] as String),
+        messages: (j['messages'] as List)
+            .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
+            .toList(),
+      );
 }
 
 class AICoachChatScreen extends StatefulWidget {
@@ -52,6 +100,8 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  List<_ChatConversation> _conversations = [];
+  String? _currentConversationId;
 
   UserProfile? _profile;
   VoiceState _voiceState = VoiceState.idle;
@@ -86,18 +136,33 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
       NutritionService.instance.setApiKey(key);
     }
 
-    // Show a greeting from the coach.
-    final profile = _profile;
-    if (profile != null) {
-      final greeting = AICoachEngine.instance.greeting(profile);
+    // Load saved conversations.
+    _conversations = _loadConversations(prefs);
+
+    if (_conversations.isNotEmpty) {
+      // Restore the most recent conversation.
+      final conv = _conversations.first;
+      _currentConversationId = conv.id;
       setState(() {
-        _messages.add(ChatMessage(
-          text: greeting,
-          isUser: false,
-          timestamp: DateTime.now(),
-          personalized: profile.isComplete,
-        ));
+        _messages.addAll(conv.messages);
       });
+    } else {
+      // No saved conversations — start fresh with a greeting.
+      _startFreshConversation();
+      final profile = _profile;
+      if (profile != null) {
+        final greeting = AICoachEngine.instance.greeting(profile);
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              text: greeting,
+              isUser: false,
+              timestamp: DateTime.now(),
+              personalized: profile.isComplete,
+            ),
+          );
+        });
+      }
     }
   }
 
@@ -131,11 +196,9 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
     if (text.isEmpty) return;
 
     setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(
+        ChatMessage(text: text, isUser: true, timestamp: DateTime.now()),
+      );
       _isThinking = true;
       _partialText = '';
       _textController.clear();
@@ -147,16 +210,19 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
     try {
       final response = await AICoachEngine.instance.respond(text, profile);
       setState(() {
-        _messages.add(ChatMessage(
-          text: response.text,
-          isUser: false,
-          timestamp: DateTime.now(),
-          fromCloud: response.fromCloud,
-          personalized: response.personalized,
-        ));
+        _messages.add(
+          ChatMessage(
+            text: response.text,
+            isUser: false,
+            timestamp: DateTime.now(),
+            fromCloud: response.fromCloud,
+            personalized: response.personalized,
+          ),
+        );
         _isThinking = false;
       });
       _scrollToBottom();
+      _saveCurrentConversation();
 
       // Auto-speak the response if TTS is enabled.
       if (_ttsEnabled && response.text.isNotEmpty) {
@@ -164,13 +230,16 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
       }
     } catch (e) {
       setState(() {
-        _messages.add(ChatMessage(
-          text: 'Sorry, something went wrong. Please try again.',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
+        _messages.add(
+          ChatMessage(
+            text: 'Sorry, something went wrong. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
         _isThinking = false;
       });
+      _saveCurrentConversation();
     }
   }
 
@@ -190,7 +259,14 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
       return false;
     }
 
-    await VoiceService.instance.initStt();
+    final ok = await VoiceService.instance.initStt();
+    if (!ok) {
+      _showSnackBar(
+        'Speech recognition could not be initialized. '
+        'Please check your device settings and try again.',
+      );
+      return false;
+    }
     _sttInitialized = true;
     return true;
   }
@@ -239,10 +315,12 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
         }
       },
       onStatus: (state) {
-        if (state == VoiceState.idle || state == VoiceState.error) {
+        if (state == VoiceState.idle ||
+            state == VoiceState.error ||
+            state == VoiceState.unsupported) {
           setState(() {
             _voiceState = VoiceState.idle;
-            if (_partialText.isNotEmpty) {
+            if (_partialText.isNotEmpty && state != VoiceState.unsupported) {
               _sendMessage(_partialText);
             }
           });
@@ -255,10 +333,14 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
         _voiceState = VoiceState.idle;
       });
       _showSnackBar(
-        'Could not start voice recognition. '
-        'Please check microphone permissions.',
+        'Microphone could not start. Make sure Google app is installed '
+        'and speech recognition is enabled on your phone. '
+        'You can type your message instead.',
       );
+      return;
     }
+
+    // Voice is listening — state already set above.
   }
 
   // -------------------------------------------------------------------
@@ -266,21 +348,39 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
   // -------------------------------------------------------------------
 
   Future<void> _speakResponse(String text) async {
-    if (!VoiceService.instance.currentLanguageSupportsTts) return;
+    if (!VoiceService.instance.currentLanguageSupportsTts) {
+      _showSnackBar(
+        'Text-to-speech is not available for ${L.language.name} on this device.',
+      );
+      return;
+    }
 
     setState(() {
       _isSpeaking = true;
       _voiceState = VoiceState.speaking;
     });
 
-    await VoiceService.instance.speak(text, onComplete: () {
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _voiceState = VoiceState.idle;
-        });
-      }
-    });
+    final started = await VoiceService.instance.speak(
+      text,
+      onComplete: () {
+        if (mounted) {
+          setState(() {
+            _isSpeaking = false;
+            _voiceState = VoiceState.idle;
+          });
+        }
+      },
+    );
+
+    if (!started && mounted) {
+      setState(() {
+        _isSpeaking = false;
+        _voiceState = VoiceState.idle;
+      });
+      _showSnackBar(
+        'Could not speak this response. Try a different language or check device TTS settings.',
+      );
+    }
   }
 
   Future<void> _stopSpeaking() async {
@@ -347,9 +447,11 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
       } else {
         await prefs.setString(_kApiKeyPref, result);
       }
-      _showSnackBar(result.isEmpty
-          ? 'Switched to on-device AI coach.'
-          : 'Cloud AI enabled — responses will be richer.');
+      _showSnackBar(
+        result.isEmpty
+            ? 'Switched to on-device AI coach.'
+            : 'Cloud AI enabled — responses will be richer.',
+      );
     }
     controller.dispose();
   }
@@ -359,6 +461,293 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), duration: const Duration(seconds: 4)),
     );
+  }
+
+  // -------------------------------------------------------------------
+  // Conversation persistence
+  // -------------------------------------------------------------------
+
+  static const _kConversationsKey = 'coach_conversations';
+
+  List<_ChatConversation> _loadConversations(SharedPreferences prefs) {
+    final raw = prefs.getString(_kConversationsKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List;
+      final convos = list
+          .map((e) => _ChatConversation.fromJson(e as Map<String, dynamic>))
+          .toList();
+      convos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return convos;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveConversations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(
+      _conversations.map((c) => c.toJson()).toList(),
+    );
+    await prefs.setString(_kConversationsKey, encoded);
+  }
+
+  void _saveCurrentConversation() {
+    if (_currentConversationId == null || _messages.isEmpty) return;
+    final idx = _conversations.indexWhere((c) => c.id == _currentConversationId);
+    final userMsgs = _messages.where((m) => m.isUser).toList();
+    final title = userMsgs.isNotEmpty
+        ? (userMsgs.first.text.length > 40
+            ? '${userMsgs.first.text.substring(0, 40)}...'
+            : userMsgs.first.text)
+        : _conversations.isNotEmpty && idx >= 0
+            ? _conversations[idx].title
+            : 'New Chat';
+
+    final updated = _ChatConversation(
+      id: _currentConversationId!,
+      title: title,
+      messages: List.from(_messages),
+      createdAt: idx >= 0 ? _conversations[idx].createdAt : DateTime.now(),
+    );
+
+    setState(() {
+      if (idx >= 0) {
+        _conversations[idx] = updated;
+      } else {
+        _conversations.insert(0, updated);
+      }
+    });
+    _saveConversations();
+  }
+
+  void _startFreshConversation() {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    _currentConversationId = id;
+    final conv = _ChatConversation(
+      id: id,
+      title: 'New Chat',
+      messages: [],
+      createdAt: DateTime.now(),
+    );
+    setState(() {
+      _conversations.insert(0, conv);
+    });
+  }
+
+  void _startNewChat() {
+    // Save current conversation first if it has messages.
+    if (_messages.isNotEmpty) {
+      _saveCurrentConversation();
+    }
+
+    // Start a fresh conversation.
+    _startFreshConversation();
+
+    setState(() {
+      _messages.clear();
+    });
+
+    // Add greeting.
+    final profile = _profile;
+    if (profile != null) {
+      final greeting = AICoachEngine.instance.greeting(profile);
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            text: greeting,
+            isUser: false,
+            timestamp: DateTime.now(),
+            personalized: profile.isComplete,
+          ),
+        );
+      });
+    }
+    _scrollToBottom();
+  }
+
+  void _loadConversation(_ChatConversation conv) {
+    _saveCurrentConversation();
+    _currentConversationId = conv.id;
+    setState(() {
+      _messages.clear();
+      _messages.addAll(conv.messages);
+    });
+    _scrollToBottom();
+    Navigator.pop(context);
+  }
+
+  Future<void> _deleteConversation(_ChatConversation conv) async {
+    setState(() {
+      _conversations.removeWhere((c) => c.id == conv.id);
+    });
+    await _saveConversations();
+
+    // If we deleted the current conversation, start a new one.
+    if (_currentConversationId == conv.id) {
+      if (_conversations.isNotEmpty) {
+        final next = _conversations.first;
+        _currentConversationId = next.id;
+        setState(() {
+          _messages.clear();
+          _messages.addAll(next.messages);
+        });
+      } else {
+        _startFreshConversation();
+        setState(() {
+          _messages.clear();
+        });
+        final profile = _profile;
+        if (profile != null) {
+          final greeting = AICoachEngine.instance.greeting(profile);
+          setState(() {
+            _messages.add(
+              ChatMessage(
+                text: greeting,
+                isUser: false,
+                timestamp: DateTime.now(),
+                personalized: profile.isComplete,
+              ),
+            );
+          });
+        }
+      }
+    }
+    _scrollToBottom();
+  }
+
+  void _showChatHistory() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (ctx2, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Text(
+                        L.t('conversations'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${_conversations.length}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: _conversations.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.chat_bubble_outline,
+                                  size: 40, color: Colors.grey.shade300),
+                              const SizedBox(height: 8),
+                              Text(
+                                L.t('noConversations'),
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          itemCount: _conversations.length,
+                          itemBuilder: (ctx3, i) {
+                            final conv = _conversations[i];
+                            final isCurrent =
+                                conv.id == _currentConversationId;
+                            return Dismissible(
+                              key: Key(conv.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                color: Colors.red,
+                                alignment: Alignment.centerRight,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                child: const Icon(Icons.delete,
+                                    color: Colors.white),
+                              ),
+                              confirmDismiss: (_) async {
+                                await _deleteConversation(conv);
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                return false;
+                              },
+                              child: ListTile(
+                                tileColor: isCurrent
+                                    ? Colors.blue.withValues(alpha: 0.05)
+                                    : null,
+                                leading: Icon(
+                                  Icons.chat_bubble,
+                                  color: isCurrent
+                                      ? Colors.blue.shade600
+                                      : Colors.grey.shade400,
+                                ),
+                                title: Text(
+                                  conv.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: isCurrent
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${_formatDate(conv.createdAt)} · ${conv.messages.length} messages',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                                trailing: IconButton(
+                                  icon: Icon(Icons.delete_outline,
+                                      size: 20, color: Colors.red.shade300),
+                                  onPressed: () async {
+                                    await _deleteConversation(conv);
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                  },
+                                ),
+                                onTap: () => _loadConversation(conv),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 
   // -------------------------------------------------------------------
@@ -383,7 +772,9 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
                     Text(
                       'FitAI Coach',
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '${L.language.name} ${L.language.sttLocale != null ? "🎤" : ""}',
@@ -395,6 +786,18 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
             ],
           ),
           actions: [
+            // New chat.
+            IconButton(
+              icon: const Icon(Icons.add_comment, size: 22),
+              tooltip: L.t('newChat'),
+              onPressed: _startNewChat,
+            ),
+            // Chat history.
+            IconButton(
+              icon: const Icon(Icons.history, size: 22),
+              tooltip: L.t('chatHistory'),
+              onPressed: _showChatHistory,
+            ),
             // TTS toggle.
             IconButton(
               icon: Icon(_ttsEnabled ? Icons.volume_up : Icons.volume_off),
@@ -460,10 +863,7 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
               child: SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: color,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
               ),
             ),
           if (_voiceState == VoiceState.listening)
@@ -496,7 +896,11 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey.shade300),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 48,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 12),
             Text(
               'Ask me anything about fitness!',
@@ -591,13 +995,17 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.volume_up, size: 12, color: Colors.blue.shade400),
+                      Icon(
+                        Icons.volume_up,
+                        size: 12,
+                        color: Colors.blue.shade700,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         'Listen',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.blue.shade400,
+                          color: Colors.blue.shade700,
                         ),
                       ),
                     ],
@@ -613,7 +1021,7 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
   Widget _buildInputBar() {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           boxShadow: [
@@ -664,8 +1072,10 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
                   ),
                   filled: true,
                   fillColor: Colors.grey.shade100,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
                 onChanged: (_) => setState(() {}),
                 onSubmitted: (text) => _sendMessage(text),
@@ -688,5 +1098,3 @@ class _AICoachChatScreenState extends State<AICoachChatScreen> {
     );
   }
 }
-
-

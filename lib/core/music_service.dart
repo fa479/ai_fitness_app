@@ -11,10 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Type of music source.
-enum MusicSourceType {
-  youtube,
-  phoneAudio,
-}
+enum MusicSourceType { youtube, phoneAudio }
 
 /// A single music item in the user's library.
 class MusicItem {
@@ -33,24 +30,24 @@ class MusicItem {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'sourceType': sourceType.name,
-        'url': url,
-        'addedDate': addedDate.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'sourceType': sourceType.name,
+    'url': url,
+    'addedDate': addedDate.toIso8601String(),
+  };
 
   factory MusicItem.fromJson(Map<String, dynamic> j) => MusicItem(
-        id: j['id'] as String? ?? '',
-        title: j['title'] as String? ?? '',
-        sourceType: MusicSourceType.values.firstWhere(
-          (e) => e.name == (j['sourceType'] as String?),
-          orElse: () => MusicSourceType.youtube,
-        ),
-        url: j['url'] as String? ?? '',
-        addedDate:
-            DateTime.tryParse(j['addedDate'] as String? ?? '') ?? DateTime.now(),
-      );
+    id: j['id'] as String? ?? '',
+    title: j['title'] as String? ?? '',
+    sourceType: MusicSourceType.values.firstWhere(
+      (e) => e.name == (j['sourceType'] as String?),
+      orElse: () => MusicSourceType.youtube,
+    ),
+    url: j['url'] as String? ?? '',
+    addedDate:
+        DateTime.tryParse(j['addedDate'] as String? ?? '') ?? DateTime.now(),
+  );
 }
 
 class MusicService {

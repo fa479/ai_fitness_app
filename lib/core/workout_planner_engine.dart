@@ -32,22 +32,22 @@ class PlannedExercise {
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'muscleGroup': muscleGroup,
-        'sets': sets,
-        'reps': reps,
-        'restSeconds': restSeconds,
-        'instructions': instructions,
-      };
+    'name': name,
+    'muscleGroup': muscleGroup,
+    'sets': sets,
+    'reps': reps,
+    'restSeconds': restSeconds,
+    'instructions': instructions,
+  };
 
   factory PlannedExercise.fromJson(Map<String, dynamic> j) => PlannedExercise(
-        name: j['name'] as String? ?? '',
-        muscleGroup: j['muscleGroup'] as String? ?? '',
-        sets: (j['sets'] as num?)?.toInt() ?? 3,
-        reps: (j['reps'] as num?)?.toInt() ?? 10,
-        restSeconds: (j['restSeconds'] as num?)?.toInt() ?? 60,
-        instructions: j['instructions'] as String? ?? '',
-      );
+    name: j['name'] as String? ?? '',
+    muscleGroup: j['muscleGroup'] as String? ?? '',
+    sets: (j['sets'] as num?)?.toInt() ?? 3,
+    reps: (j['reps'] as num?)?.toInt() ?? 10,
+    restSeconds: (j['restSeconds'] as num?)?.toInt() ?? 60,
+    instructions: j['instructions'] as String? ?? '',
+  );
 }
 
 /// A meal suggestion in a daily plan.
@@ -71,24 +71,24 @@ class PlannedMeal {
   });
 
   Map<String, dynamic> toJson() => {
-        'mealType': mealType,
-        'foodName': foodName,
-        'serving': serving,
-        'calories': calories,
-        'protein': protein,
-        'carbs': carbs,
-        'fat': fat,
-      };
+    'mealType': mealType,
+    'foodName': foodName,
+    'serving': serving,
+    'calories': calories,
+    'protein': protein,
+    'carbs': carbs,
+    'fat': fat,
+  };
 
   factory PlannedMeal.fromJson(Map<String, dynamic> j) => PlannedMeal(
-        mealType: j['mealType'] as String? ?? 'Snack',
-        foodName: j['foodName'] as String? ?? '',
-        serving: j['serving'] as String? ?? '',
-        calories: (j['calories'] as num?)?.toInt() ?? 0,
-        protein: (j['protein'] as num?)?.toDouble() ?? 0,
-        carbs: (j['carbs'] as num?)?.toDouble() ?? 0,
-        fat: (j['fat'] as num?)?.toDouble() ?? 0,
-      );
+    mealType: j['mealType'] as String? ?? 'Snack',
+    foodName: j['foodName'] as String? ?? '',
+    serving: j['serving'] as String? ?? '',
+    calories: (j['calories'] as num?)?.toInt() ?? 0,
+    protein: (j['protein'] as num?)?.toDouble() ?? 0,
+    carbs: (j['carbs'] as num?)?.toDouble() ?? 0,
+    fat: (j['fat'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// A complete daily workout plan.
@@ -112,30 +112,32 @@ class DailyPlan {
   });
 
   Map<String, dynamic> toJson() => {
-        'date': date.toIso8601String(),
-        'exercises': exercises.map((e) => e.toJson()).toList(),
-        'meals': meals.map((m) => m.toJson()).toList(),
-        'warmup': warmup,
-        'cooldown': cooldown,
-        'notes': notes,
-        'completed': completed,
-      };
+    'date': date.toIso8601String(),
+    'exercises': exercises.map((e) => e.toJson()).toList(),
+    'meals': meals.map((m) => m.toJson()).toList(),
+    'warmup': warmup,
+    'cooldown': cooldown,
+    'notes': notes,
+    'completed': completed,
+  };
 
   factory DailyPlan.fromJson(Map<String, dynamic> j) => DailyPlan(
-        date: DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
-        exercises: (j['exercises'] as List<dynamic>?)
-                ?.map((e) => PlannedExercise.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            [],
-        meals: (j['meals'] as List<dynamic>?)
-                ?.map((m) => PlannedMeal.fromJson(m as Map<String, dynamic>))
-                .toList() ??
-            [],
-        warmup: j['warmup'] as String? ?? '',
-        cooldown: j['cooldown'] as String? ?? '',
-        notes: j['notes'] as String? ?? '',
-        completed: j['completed'] as bool? ?? false,
-      );
+    date: DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
+    exercises:
+        (j['exercises'] as List<dynamic>?)
+            ?.map((e) => PlannedExercise.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    meals:
+        (j['meals'] as List<dynamic>?)
+            ?.map((m) => PlannedMeal.fromJson(m as Map<String, dynamic>))
+            .toList() ??
+        [],
+    warmup: j['warmup'] as String? ?? '',
+    cooldown: j['cooldown'] as String? ?? '',
+    notes: j['notes'] as String? ?? '',
+    completed: j['completed'] as bool? ?? false,
+  );
 }
 
 /// User's daily routine information.
@@ -159,24 +161,24 @@ class UserRoutine {
   });
 
   Map<String, dynamic> toJson() => {
-        'wakeTime': wakeTime,
-        'sleepTime': sleepTime,
-        'workSchedule': workSchedule,
-        'mealTimes': mealTimes,
-        'freeTime': freeTime,
-        'workoutTimePreference': workoutTimePreference,
-        'notes': notes,
-      };
+    'wakeTime': wakeTime,
+    'sleepTime': sleepTime,
+    'workSchedule': workSchedule,
+    'mealTimes': mealTimes,
+    'freeTime': freeTime,
+    'workoutTimePreference': workoutTimePreference,
+    'notes': notes,
+  };
 
   factory UserRoutine.fromJson(Map<String, dynamic> j) => UserRoutine(
-        wakeTime: j['wakeTime'] as String? ?? '',
-        sleepTime: j['sleepTime'] as String? ?? '',
-        workSchedule: j['workSchedule'] as String? ?? '',
-        mealTimes: j['mealTimes'] as String? ?? '',
-        freeTime: j['freeTime'] as String? ?? '',
-        workoutTimePreference: j['workoutTimePreference'] as String? ?? '',
-        notes: j['notes'] as String? ?? '',
-      );
+    wakeTime: j['wakeTime'] as String? ?? '',
+    sleepTime: j['sleepTime'] as String? ?? '',
+    workSchedule: j['workSchedule'] as String? ?? '',
+    mealTimes: j['mealTimes'] as String? ?? '',
+    freeTime: j['freeTime'] as String? ?? '',
+    workoutTimePreference: j['workoutTimePreference'] as String? ?? '',
+    notes: j['notes'] as String? ?? '',
+  );
 
   bool get isEmpty =>
       wakeTime.isEmpty &&
@@ -202,16 +204,16 @@ class RoutineIssue {
   });
 
   Map<String, dynamic> toJson() => {
-        'problem': problem,
-        'correction': correction,
-        'reason': reason,
-      };
+    'problem': problem,
+    'correction': correction,
+    'reason': reason,
+  };
 
   factory RoutineIssue.fromJson(Map<String, dynamic> j) => RoutineIssue(
-        problem: j['problem'] as String? ?? '',
-        correction: j['correction'] as String? ?? '',
-        reason: j['reason'] as String? ?? '',
-      );
+    problem: j['problem'] as String? ?? '',
+    correction: j['correction'] as String? ?? '',
+    reason: j['reason'] as String? ?? '',
+  );
 }
 
 class RoutineAnalysis {
@@ -252,9 +254,7 @@ class WorkoutPlannerEngine {
     final json = prefs.getString(_kRoutineKey);
     if (json == null) return const UserRoutine();
     try {
-      return UserRoutine.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
-      );
+      return UserRoutine.fromJson(jsonDecode(json) as Map<String, dynamic>);
     } catch (e) {
       debugPrint('Failed to load routine: $e');
       return const UserRoutine();
@@ -313,10 +313,12 @@ class WorkoutPlannerEngine {
     final plans = await loadPlans();
     // Remove any existing plan for the same calendar date
     // (compare year/month/day only, not time)
-    plans.removeWhere((p) =>
-        p.date.year == plan.date.year &&
-        p.date.month == plan.date.month &&
-        p.date.day == plan.date.day);
+    plans.removeWhere(
+      (p) =>
+          p.date.year == plan.date.year &&
+          p.date.month == plan.date.month &&
+          p.date.day == plan.date.day,
+    );
     plans.add(plan);
     plans.sort((a, b) => a.date.compareTo(b.date));
     await savePlans(plans);
@@ -379,7 +381,8 @@ class WorkoutPlannerEngine {
     UserRoutine routine,
     UserProfile profile,
   ) async {
-    final prompt = '''
+    final prompt =
+        '''
 You are a fitness coach analyzing a user's daily routine.
 
 User Profile:
@@ -422,13 +425,15 @@ Do not invent calories, nutrients, or portion sizes.
 
     try {
       final json = jsonDecode(response) as Map<String, dynamic>;
-      final issuesList = (json['issues'] as List<dynamic>?)
+      final issuesList =
+          (json['issues'] as List<dynamic>?)
               ?.map((e) => RoutineIssue.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
       return RoutineAnalysis(
         issues: issuesList,
-        suggestions: (json['suggestions'] as List<dynamic>?)
+        suggestions:
+            (json['suggestions'] as List<dynamic>?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [],
@@ -448,51 +453,74 @@ Do not invent calories, nutrients, or portion sizes.
     final suggestions = <String>[];
 
     if (routine.wakeTime.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Wake time not specified.',
-        correction: 'Set a consistent wake time that aligns with your schedule.',
-        reason: 'A consistent wake time helps regulate your body clock and makes it easier to plan workouts and meals.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Wake time not specified.',
+          correction:
+              'Set a consistent wake time that aligns with your schedule.',
+          reason:
+              'A consistent wake time helps regulate your body clock and makes it easier to plan workouts and meals.',
+        ),
+      );
     }
 
     if (routine.sleepTime.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Sleep time not specified.',
-        correction: 'Aim for 7-9 hours of sleep by setting a consistent bedtime.',
-        reason: 'Adequate sleep is essential for muscle recovery and overall fitness progress.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Sleep time not specified.',
+          correction:
+              'Aim for 7-9 hours of sleep by setting a consistent bedtime.',
+          reason:
+              'Adequate sleep is essential for muscle recovery and overall fitness progress.',
+        ),
+      );
     }
 
     if (routine.workoutTimePreference.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Workout time not specified.',
-        correction: 'Choose a consistent workout time based on your energy levels and daily schedule.',
-        reason: 'A consistent workout time helps build a sustainable habit.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Workout time not specified.',
+          correction:
+              'Choose a consistent workout time based on your energy levels and daily schedule.',
+          reason: 'A consistent workout time helps build a sustainable habit.',
+        ),
+      );
     }
 
     if (routine.mealTimes.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Meal times not specified.',
-        correction: 'Plan regular meal times throughout the day based on your routine.',
-        reason: 'Consistent meal timing helps maintain energy levels and supports workout performance.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Meal times not specified.',
+          correction:
+              'Plan regular meal times throughout the day based on your routine.',
+          reason:
+              'Consistent meal timing helps maintain energy levels and supports workout performance.',
+        ),
+      );
     }
 
     if (routine.workSchedule.isEmpty && routine.freeTime.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Work/school schedule and free time are not specified.',
-        correction: 'Add your work or school schedule and available free time.',
-        reason: 'Knowing your daily commitments helps create a realistic workout and meal plan.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Work/school schedule and free time are not specified.',
+          correction:
+              'Add your work or school schedule and available free time.',
+          reason:
+              'Knowing your daily commitments helps create a realistic workout and meal plan.',
+        ),
+      );
     }
 
     if (profile.daysPerWeek.isEmpty) {
-      issues.add(const RoutineIssue(
-        problem: 'Workout frequency not set in profile.',
-        correction: 'Set how many days per week you can realistically workout.',
-        reason: 'This helps generate an appropriate workout plan that fits your schedule.',
-      ));
+      issues.add(
+        const RoutineIssue(
+          problem: 'Workout frequency not set in profile.',
+          correction:
+              'Set how many days per week you can realistically workout.',
+          reason:
+              'This helps generate an appropriate workout plan that fits your schedule.',
+        ),
+      );
     }
 
     if (issues.isEmpty) {
@@ -537,7 +565,8 @@ Do not invent calories, nutrients, or portion sizes.
       DateTime.now().subtract(const Duration(days: 1)),
     );
 
-    final prompt = '''
+    final prompt =
+        '''
 You are a fitness coach creating a personalized workout plan.
 
 User Profile:
@@ -549,6 +578,9 @@ User's Routine:
 - Equipment: ${profile.equipment}
 - Experience: ${profile.experience}
 - Goal: ${profile.goal}
+- Age group: ${profile.ageGroup.name}
+- Health conditions: ${profile.healthConditionNames.isEmpty ? 'None' : profile.healthConditionNames.join(', ')}
+- Workout location: ${profile.workoutLocation}
 
 ${previousPlan != null ? '''
 Previous workout (${previousPlan.date.toString().substring(0, 10)}):
@@ -566,6 +598,9 @@ Requirements:
 - Include 5-8 exercises appropriate for their level
 - Specify sets, reps, and rest periods
 - Include warmup and cooldown suggestions
+${profile.ageGroup.isMinor ? '- IMPORTANT: This is a minor. Focus on proper form, fun, and balanced activity. Never recommend calorie deficits or extreme intensity.' : ''}
+${profile.ageGroup == AgeGroup.older ? '- IMPORTANT: This is an older adult. Use lower-impact exercises, longer rest periods (90s+), and avoid high-intensity movements like burpees.' : ''}
+${profile.hasHighRiskCondition ? '- IMPORTANT: User has health conditions (${profile.healthConditionNames.join(', ')}). Be conservative with intensity, include a medical disclaimer, and avoid high-impact exercises.' : ''}
 
 Respond in JSON format:
 {
@@ -592,11 +627,13 @@ Respond in JSON format:
 
     try {
       final json = jsonDecode(response) as Map<String, dynamic>;
-      final exercises = (json['exercises'] as List<dynamic>?)
+      final exercises =
+          (json['exercises'] as List<dynamic>?)
               ?.map((e) => PlannedExercise.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
-      final meals = (json['meals'] as List<dynamic>?)
+      final meals =
+          (json['meals'] as List<dynamic>?)
               ?.map((m) => PlannedMeal.fromJson(m as Map<String, dynamic>))
               .toList() ??
           [];
@@ -623,67 +660,109 @@ Respond in JSON format:
     final exercises = <PlannedExercise>[];
     final isIntermediate = profile.experience == 'Intermediate';
     final isAdvanced = profile.experience == 'Advanced';
+    final ageGroup = profile.ageGroup;
+    final hasHighRisk = profile.hasHighRiskCondition;
 
-    // Full body workout for all levels
-    exercises.add(const PlannedExercise(
-      name: 'Bodyweight Squats',
-      muscleGroup: 'Legs',
-      sets: 3,
-      reps: 12,
-      restSeconds: 60,
-      instructions: 'Keep chest up, knees tracking over toes',
-    ));
+    final squatName = ageGroup == AgeGroup.older ? 'Chair Squats' : 'Bodyweight Squats';
+    final squatSets = (ageGroup == AgeGroup.child || ageGroup == AgeGroup.older) ? 2 : 3;
+    final squatRest = (ageGroup == AgeGroup.child || ageGroup == AgeGroup.older) ? 90 : 60;
 
-    exercises.add(const PlannedExercise(
-      name: 'Push-ups',
-      muscleGroup: 'Chest',
-      sets: 3,
-      reps: 10,
-      restSeconds: 60,
-      instructions: 'Keep body straight, lower chest to floor',
-    ));
-
-    exercises.add(const PlannedExercise(
-      name: 'Bent-over Rows',
-      muscleGroup: 'Back',
-      sets: 3,
-      reps: 12,
-      restSeconds: 60,
-      instructions: 'Keep back flat, pull elbows to ceiling',
-    ));
-
-    exercises.add(const PlannedExercise(
-      name: 'Plank',
-      muscleGroup: 'Core',
-      sets: 3,
-      reps: 30,
-      restSeconds: 45,
-      instructions: 'Hold for 30 seconds, keep body straight',
-    ));
-
-    if (isIntermediate || isAdvanced) {
-      exercises.add(const PlannedExercise(
-        name: 'Lunges',
+    exercises.add(
+      PlannedExercise(
+        name: squatName,
         muscleGroup: 'Legs',
+        sets: squatSets,
+        reps: 12,
+        restSeconds: squatRest,
+        instructions: 'Keep chest up, knees tracking over toes',
+      ),
+    );
+
+    exercises.add(
+      const PlannedExercise(
+        name: 'Push-ups',
+        muscleGroup: 'Chest',
         sets: 3,
         reps: 10,
         restSeconds: 60,
-        instructions: 'Step forward, lower back knee toward floor',
-      ));
-    }
+        instructions: 'Keep body straight, lower chest to floor',
+      ),
+    );
 
-    if (isAdvanced) {
-      exercises.add(const PlannedExercise(
-        name: 'Burpees',
-        muscleGroup: 'Full Body',
+    exercises.add(
+      const PlannedExercise(
+        name: 'Bent-over Rows',
+        muscleGroup: 'Back',
         sets: 3,
-        reps: 8,
-        restSeconds: 90,
-        instructions: 'Explosive movement, maintain form',
-      ));
+        reps: 12,
+        restSeconds: 60,
+        instructions: 'Keep back flat, pull elbows to ceiling',
+      ),
+    );
+
+    exercises.add(
+      const PlannedExercise(
+        name: 'Plank',
+        muscleGroup: 'Core',
+        sets: 3,
+        reps: 30,
+        restSeconds: 45,
+        instructions: 'Hold for 30 seconds, keep body straight',
+      ),
+    );
+
+    if (isIntermediate || isAdvanced) {
+      exercises.add(
+        const PlannedExercise(
+          name: 'Lunges',
+          muscleGroup: 'Legs',
+          sets: 3,
+          reps: 10,
+          restSeconds: 60,
+          instructions: 'Step forward, lower back knee toward floor',
+        ),
+      );
     }
 
-    // Generate meal suggestions based on user profile
+    if (isAdvanced && !hasHighRisk && ageGroup != AgeGroup.older) {
+      exercises.add(
+        const PlannedExercise(
+          name: 'Burpees',
+          muscleGroup: 'Full Body',
+          sets: 3,
+          reps: 8,
+          restSeconds: 90,
+          instructions: 'Explosive movement, maintain form',
+        ),
+      );
+    }
+
+    if (ageGroup == AgeGroup.older && hasHighRisk) {
+      exercises.add(
+        const PlannedExercise(
+          name: 'Step-ups',
+          muscleGroup: 'Legs',
+          sets: 2,
+          reps: 8,
+          restSeconds: 90,
+          instructions: 'Use a low step, hold railing for balance',
+        ),
+      );
+    }
+
+    if (ageGroup == AgeGroup.child && isAdvanced) {
+      exercises.add(
+        const PlannedExercise(
+          name: 'Fun Runs',
+          muscleGroup: 'Full Body',
+          sets: 2,
+          reps: 1,
+          restSeconds: 90,
+          instructions: 'Run in place for 1 minute, keep it fun!',
+        ),
+      );
+    }
+
     final meals = _generateMealSuggestions(profile);
 
     return DailyPlan(
@@ -692,65 +771,95 @@ Respond in JSON format:
       meals: meals,
       warmup: '5 minutes light cardio (jogging in place, jumping jacks)',
       cooldown: '5 minutes stretching (focus on worked muscles)',
-      notes: _getMotivationalNote(profile.goal),
+      notes: _getMotivationalNote(profile),
     );
   }
 
   List<PlannedMeal> _generateMealSuggestions(UserProfile profile) {
     final meals = <PlannedMeal>[];
-    
+
     // Generate meals based on user's dietary preference and goals
-    final isVegetarian = profile.dietaryPreference.toLowerCase().contains('vegetarian') ||
+    final isVegetarian =
+        profile.dietaryPreference.toLowerCase().contains('vegetarian') ||
         profile.dietaryPreference.toLowerCase().contains('vegan');
-    
+
     // Breakfast suggestion
-    meals.add(PlannedMeal(
-      mealType: 'Breakfast',
-      foodName: isVegetarian ? 'Oatmeal with fruits' : 'Scrambled eggs with toast',
-      serving: '1 bowl',
-      calories: isVegetarian ? 350 : 400,
-      protein: isVegetarian ? 12.0 : 20.0,
-      carbs: isVegetarian ? 55.0 : 35.0,
-      fat: isVegetarian ? 8.0 : 18.0,
-    ));
-    
+    meals.add(
+      PlannedMeal(
+        mealType: 'Breakfast',
+        foodName: isVegetarian
+            ? 'Oatmeal with fruits'
+            : 'Scrambled eggs with toast',
+        serving: '1 bowl',
+        calories: isVegetarian ? 350 : 400,
+        protein: isVegetarian ? 12.0 : 20.0,
+        carbs: isVegetarian ? 55.0 : 35.0,
+        fat: isVegetarian ? 8.0 : 18.0,
+      ),
+    );
+
     // Lunch suggestion
-    meals.add(PlannedMeal(
-      mealType: 'Lunch',
-      foodName: isVegetarian ? 'Daal with rice and vegetables' : 'Grilled chicken with rice',
-      serving: '1 plate',
-      calories: isVegetarian ? 500 : 550,
-      protein: isVegetarian ? 18.0 : 35.0,
-      carbs: isVegetarian ? 70.0 : 45.0,
-      fat: isVegetarian ? 12.0 : 15.0,
-    ));
-    
+    meals.add(
+      PlannedMeal(
+        mealType: 'Lunch',
+        foodName: isVegetarian
+            ? 'Daal with rice and vegetables'
+            : 'Grilled chicken with rice',
+        serving: '1 plate',
+        calories: isVegetarian ? 500 : 550,
+        protein: isVegetarian ? 18.0 : 35.0,
+        carbs: isVegetarian ? 70.0 : 45.0,
+        fat: isVegetarian ? 12.0 : 15.0,
+      ),
+    );
+
     // Snack suggestion
-    meals.add(PlannedMeal(
-      mealType: 'Snack',
-      foodName: isVegetarian ? 'Greek yogurt with nuts' : 'Protein shake',
-      serving: '1 serving',
-      calories: isVegetarian ? 250 : 200,
-      protein: isVegetarian ? 15.0 : 25.0,
-      carbs: isVegetarian ? 20.0 : 10.0,
-      fat: isVegetarian ? 12.0 : 5.0,
-    ));
-    
+    meals.add(
+      PlannedMeal(
+        mealType: 'Snack',
+        foodName: isVegetarian ? 'Greek yogurt with nuts' : 'Protein shake',
+        serving: '1 serving',
+        calories: isVegetarian ? 250 : 200,
+        protein: isVegetarian ? 15.0 : 25.0,
+        carbs: isVegetarian ? 20.0 : 10.0,
+        fat: isVegetarian ? 12.0 : 5.0,
+      ),
+    );
+
     // Dinner suggestion
-    meals.add(PlannedMeal(
-      mealType: 'Dinner',
-      foodName: isVegetarian ? 'Roti with vegetable curry' : 'Fish with vegetables',
-      serving: '1 plate',
-      calories: isVegetarian ? 450 : 480,
-      protein: isVegetarian ? 16.0 : 30.0,
-      carbs: isVegetarian ? 60.0 : 25.0,
-      fat: isVegetarian ? 14.0 : 18.0,
-    ));
-    
+    meals.add(
+      PlannedMeal(
+        mealType: 'Dinner',
+        foodName: isVegetarian
+            ? 'Roti with vegetable curry'
+            : 'Fish with vegetables',
+        serving: '1 plate',
+        calories: isVegetarian ? 450 : 480,
+        protein: isVegetarian ? 16.0 : 30.0,
+        carbs: isVegetarian ? 60.0 : 25.0,
+        fat: isVegetarian ? 14.0 : 18.0,
+      ),
+    );
+
     return meals;
   }
 
-  String _getMotivationalNote(String goal) {
+  String _getMotivationalNote(UserProfile profile) {
+    final goal = profile.goal;
+    final ageGroup = profile.ageGroup;
+
+    if (ageGroup == AgeGroup.child) {
+      return 'Focus on fun and movement — great job being active today!';
+    }
+    if (ageGroup == AgeGroup.teen) {
+      return 'Focus on proper form and consistency — you are building habits for life!';
+    }
+    if (ageGroup == AgeGroup.older) {
+      return 'Move at your own pace and listen to your body. Consistency matters more than intensity!';
+    }
+    if (profile.hasHighRiskCondition) {
+      return 'Please consult your doctor before starting any new exercise program. Start slow and listen to your body.';
+    }
     if (goal.toLowerCase().contains('strength')) {
       return 'Focus on progressive overload - try to increase weight or reps each week!';
     } else if (goal.toLowerCase().contains('loss') ||
@@ -782,9 +891,9 @@ Respond in JSON format:
           'contents': [
             {
               'parts': [
-                {'text': prompt}
-              ]
-            }
+                {'text': prompt},
+              ],
+            },
           ],
         }),
       );

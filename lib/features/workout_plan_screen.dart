@@ -11,8 +11,11 @@ import 'package:flutter/material.dart';
 
 import '../app/app_localizations.dart' show L;
 import '../core/food_data.dart';
+import '../core/pose_analyzer.dart';
 import '../core/user_profile_service.dart';
 import '../core/workout_planner_engine.dart';
+import '../exercise_library.dart';
+import 'form_check_screen.dart';
 
 class WorkoutPlanScreen extends StatefulWidget {
   const WorkoutPlanScreen({super.key});
@@ -116,18 +119,14 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
   void _viewPlan(DailyPlan plan) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => PlanDetailView(plan: plan),
-      ),
+      MaterialPageRoute(builder: (context) => PlanDetailView(plan: plan)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(L.t('myWorkoutPlan')),
-      ),
+      appBar: AppBar(title: Text(L.t('myWorkoutPlan'))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildContent(),
@@ -161,30 +160,370 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            L.t('yourProfile'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  L.t('yourProfile'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                onPressed: _editProfile,
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          if (_profile.isComplete) ...[
-            _profileRow(L.t('goal'), _profile.goal),
-            _profileRow(L.t('experience'), _profile.experience),
-            _profileRow(L.t('equipment'), _profile.equipment),
+          if (_profile.name.isNotEmpty)
+            _profileRow(L.t('name'), _profile.name),
+          if (_profile.age.isNotEmpty)
+            _profileRow(L.t('age'), '${_profile.age} ${L.t("years")}'),
+          if (_profile.height.isNotEmpty)
+            _profileRow(L.t('height'), '${_profile.height} cm'),
+          if (_profile.weight.isNotEmpty)
+            _profileRow(L.t('weight'), '${_profile.weight} kg'),
+          _profileRow(L.t('goal'), _profile.goal),
+          _profileRow(L.t('gender'), _profile.gender.name),
+          if (_profile.healthConditionNames.isNotEmpty)
             _profileRow(
-              L.t('availability'),
-              '${_profile.daysPerWeek} ${L.t("daysPerWeek")}, ${_profile.minutesPerSession} ${L.t("minutes")}',
+              L.t('healthConditions'),
+              _profile.healthConditionNames
+                  .map((n) => L.t('health_$n'))
+                  .join(', '),
             ),
-          ] else
-            Text(
-              L.t('profileNotSet'),
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
+          _profileRow(L.t('workoutLocation'), _profile.workoutLocation),
+          _profileRow(L.t('experience'), _profile.experience),
+          _profileRow(L.t('equipment'), _profile.equipment),
+          _profileRow('Activity Level', _profile.activity.label),
+          _profileRow('Diet', _profile.dietaryPreference),
+          _profileRow(
+            L.t('availability'),
+            '${_profile.daysPerWeek} ${L.t("daysPerWeek")}, ${_profile.minutesPerSession} ${L.t("minutes")}',
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _editProfile() async {
+    final goalCtrl = TextEditingController(text: _profile.goal);
+    final daysCtrl = TextEditingController(text: _profile.daysPerWeek);
+    final minutesCtrl = TextEditingController(text: _profile.minutesPerSession);
+    String selectedExperience = _profile.experience;
+    String selectedEquipment = _profile.equipment;
+    String selectedActivityLevel = _profile.activityLevelName;
+    String selectedDietaryPreference = _profile.dietaryPreference;
+    String selectedGender = _profile.genderName;
+    String selectedLocation = _profile.workoutLocation;
+    List<String> selectedHealthConditions =
+        List<String>.from(_profile.healthConditionNames);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(L.t('editProfile')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: goalCtrl,
+                  decoration: InputDecoration(
+                    labelText: L.t('goal'),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedGender,
+                  decoration: InputDecoration(
+                    labelText: L.t('gender'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: ['male', 'female', 'other']
+                      .map((g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(g == 'male'
+                                ? L.t('male')
+                                : g == 'female'
+                                    ? L.t('female')
+                                    : L.t('preferNotToSay')),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedGender = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedLocation,
+                  decoration: InputDecoration(
+                    labelText: L.t('workoutLocation'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: ['Home', 'Gym', 'Outdoor']
+                      .map((loc) => DropdownMenuItem(
+                            value: loc,
+                            child: Text(loc == 'Home'
+                                ? L.t('home')
+                                : loc == 'Gym'
+                                    ? L.t('gym')
+                                    : L.t('outdoor')),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedLocation = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    final allConditions = HealthCondition.values
+                        .where((c) => c != HealthCondition.none)
+                        .toList();
+                    final result = await showDialog<List<String>>(
+                      context: context,
+                      builder: (hCtx) {
+                        return StatefulBuilder(
+                          builder: (hCtx, setHState) {
+                            return AlertDialog(
+                              title: Text(L.t('selectHealthConditions')),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: allConditions.map((c) {
+                                    return CheckboxListTile(
+                                      title: Text(L.t('health_${c.name}')),
+                                      value: selectedHealthConditions
+                                          .contains(c.name),
+                                      onChanged: (checked) {
+                                        setHState(() {
+                                          if (checked == true) {
+                                            selectedHealthConditions
+                                                .add(c.name);
+                                          } else {
+                                            selectedHealthConditions
+                                                .remove(c.name);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(hCtx, <String>[]),
+                                  child: Text(L.t('cancel')),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(
+                                    hCtx,
+                                    List<String>.from(selectedHealthConditions),
+                                  ),
+                                  child: Text(L.t('save')),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                    if (result != null) {
+                      setDialogState(
+                        () => selectedHealthConditions = result,
+                      );
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: L.t('healthConditions'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    child: Text(
+                      selectedHealthConditions.isEmpty
+                          ? L.t('health_none')
+                          : selectedHealthConditions
+                              .map((n) => L.t('health_$n'))
+                              .join(', '),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedExperience,
+                  decoration: InputDecoration(
+                    labelText: L.t('experience'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: ['Beginner', 'Intermediate', 'Advanced']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedExperience = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedEquipment,
+                  decoration: InputDecoration(
+                    labelText: L.t('equipment'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: ['None', 'Home', 'Gym', 'Outdoor']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedEquipment = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedActivityLevel,
+                  decoration: const InputDecoration(
+                    labelText: 'Activity Level',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['sedentary', 'light', 'moderate', 'active', 'athlete']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedActivityLevel = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedDietaryPreference,
+                  decoration: const InputDecoration(
+                    labelText: 'Dietary Preference',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    'No preference',
+                    'Vegetarian',
+                    'Vegan',
+                    'Keto',
+                    'Paleo',
+                    'Halal',
+                  ]
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedDietaryPreference = v);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: daysCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: L.t('daysPerWeek'),
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: minutesCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: L.t('minutes'),
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(L.t('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(L.t('save')),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      // Capture controller values before they might be disposed
+      final goalText = goalCtrl.text.trim();
+      final daysText = daysCtrl.text.trim();
+      final minutesText = minutesCtrl.text.trim();
+      
+      debugPrint('Profile save: goal=$goalText, days=$daysText, minutes=$minutesText');
+      debugPrint('Profile save: experience=$selectedExperience, equipment=$selectedEquipment');
+      debugPrint('Profile save: activity=$selectedActivityLevel, diet=$selectedDietaryPreference');
+      
+      final updated = UserProfile(
+        name: _profile.name,
+        age: _profile.age,
+        height: _profile.height,
+        weight: _profile.weight,
+        goal: goalText.isNotEmpty ? goalText : _profile.goal,
+        activityLevelName: selectedActivityLevel,
+        experience: selectedExperience,
+        equipment: selectedEquipment,
+        daysPerWeek: daysText.isNotEmpty ? daysText : _profile.daysPerWeek,
+        minutesPerSession:
+            minutesText.isNotEmpty ? minutesText : _profile.minutesPerSession,
+        dietaryPreference: selectedDietaryPreference,
+        language: _profile.language,
+        genderName: selectedGender,
+        healthConditionNames: selectedHealthConditions,
+        workoutLocation: selectedLocation,
+        preferredDays: _profile.preferredDays,
+      );
+      
+      debugPrint('Profile save: calling _profileService.save()');
+      await _profileService.save(updated);
+      debugPrint('Profile save: save completed, calling _loadData()');
+      await _loadData();
+      debugPrint('Profile save: loadData completed, new profile goal=${_profile.goal}');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile saved successfully'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      debugPrint('Profile save: dialog returned $saved (not true)');
+    }
+
+    goalCtrl.dispose();
+    daysCtrl.dispose();
+    minutesCtrl.dispose();
   }
 
   Widget _profileRow(String label, String value) {
@@ -192,15 +531,9 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
+            child: Text(value, style: TextStyle(color: Colors.grey.shade700)),
           ),
         ],
       ),
@@ -248,9 +581,14 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
               _routineRow(L.t('sleepTime'), _routine.sleepTime),
             if (_routine.workSchedule.isNotEmpty)
               _routineRow(L.t('workSchedule'), _routine.workSchedule),
+            if (_routine.mealTimes.isNotEmpty)
+              _routineRow(L.t('mealTimes'), _routine.mealTimes),
+            if (_routine.freeTime.isNotEmpty)
+              _routineRow(L.t('freeTime'), _routine.freeTime),
             if (_routine.workoutTimePreference.isNotEmpty)
-              _routineRow(
-                  L.t('workoutTime'), _routine.workoutTimePreference),
+              _routineRow(L.t('workoutTime'), _routine.workoutTimePreference),
+            if (_routine.notes.isNotEmpty)
+              _routineRow(L.t('notes'), _routine.notes),
           ],
           const SizedBox(height: 12),
           Row(
@@ -298,15 +636,9 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
+            child: Text(value, style: TextStyle(color: Colors.grey.shade700)),
           ),
         ],
       ),
@@ -342,7 +674,9 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
               if (_analysis!.isAiGenerated)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.deepPurple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -359,7 +693,9 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
               else
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -403,25 +739,26 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ..._analysis!.suggestions.map((suggestion) => Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• ',
-                          style: TextStyle(color: colorScheme.primary)),
-                      Expanded(
-                        child: Text(
-                          suggestion,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+            ..._analysis!.suggestions.map(
+              (suggestion) => Padding(
+                padding: const EdgeInsets.only(left: 8, top: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• ', style: TextStyle(color: colorScheme.primary)),
+                    Expanded(
+                      child: Text(
+                        suggestion,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -429,7 +766,10 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
   }
 
   Widget _buildIssueCard(
-      RoutineIssue issue, int number, ColorScheme colorScheme) {
+    RoutineIssue issue,
+    int number,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -455,8 +795,11 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.warning_amber_rounded,
-                  size: 16, color: Colors.orange.shade700),
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: Colors.orange.shade700,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -474,8 +817,11 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.tips_and_updates_outlined,
-                  size: 16, color: Colors.green.shade700),
+              Icon(
+                Icons.tips_and_updates_outlined,
+                size: 16,
+                color: Colors.green.shade700,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -492,8 +838,7 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline,
-                  size: 16, color: colorScheme.primary),
+              Icon(Icons.info_outline, size: 16, color: colorScheme.primary),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -514,20 +859,19 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
 
   Widget _buildPlansSection() {
     final today = DateTime.now();
-    final upcomingPlans =
-        _plans.where((p) => p.date.isAfter(today.subtract(const Duration(days: 1)))).toList();
-    final pastPlans =
-        _plans.where((p) => p.date.isBefore(today.subtract(const Duration(days: 1)))).toList();
+    final upcomingPlans = _plans
+        .where((p) => p.date.isAfter(today.subtract(const Duration(days: 1))))
+        .toList();
+    final pastPlans = _plans
+        .where((p) => p.date.isBefore(today.subtract(const Duration(days: 1))))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           L.t('upcomingPlans'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (upcomingPlans.isEmpty)
@@ -550,10 +894,7 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
         if (pastPlans.isNotEmpty) ...[
           Text(
             L.t('pastWorkouts'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...pastPlans.take(5).map((plan) => _buildPlanCard(plan)),
@@ -563,11 +904,13 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
   }
 
   Widget _buildPlanCard(DailyPlan plan) {
-    final isToday = plan.date.year == DateTime.now().year &&
+    final isToday =
+        plan.date.year == DateTime.now().year &&
         plan.date.month == DateTime.now().month &&
         plan.date.day == DateTime.now().day;
 
-    final isTomorrow = plan.date.year == DateTime.now().add(const Duration(days: 1)).year &&
+    final isTomorrow =
+        plan.date.year == DateTime.now().add(const Duration(days: 1)).year &&
         plan.date.month == DateTime.now().add(const Duration(days: 1)).month &&
         plan.date.day == DateTime.now().add(const Duration(days: 1)).day;
 
@@ -577,25 +920,21 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
     } else if (isTomorrow) {
       dateLabel = L.t('tomorrow');
     } else {
-      dateLabel =
-          '${plan.date.day}/${plan.date.month}/${plan.date.year}';
+      dateLabel = '${plan.date.day}/${plan.date.month}/${plan.date.year}';
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor:
-              plan.completed ? Colors.green : Colors.deepPurple,
+          backgroundColor: plan.completed ? Colors.green : Colors.deepPurple,
           child: Icon(
             plan.completed ? Icons.check : Icons.fitness_center,
             color: Colors.white,
           ),
         ),
         title: Text(dateLabel),
-        subtitle: Text(
-          '${plan.exercises.length} ${L.t("exercises")}',
-        ),
+        subtitle: Text('${plan.exercises.length} ${L.t("exercises")}'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _viewPlan(plan),
       ),
@@ -634,13 +973,19 @@ class _EditRoutineScreenState extends State<EditRoutineScreen> {
   void initState() {
     super.initState();
     _wakeTimeController = TextEditingController(text: widget.routine.wakeTime);
-    _sleepTimeController = TextEditingController(text: widget.routine.sleepTime);
-    _workScheduleController =
-        TextEditingController(text: widget.routine.workSchedule);
-    _mealTimesController = TextEditingController(text: widget.routine.mealTimes);
+    _sleepTimeController = TextEditingController(
+      text: widget.routine.sleepTime,
+    );
+    _workScheduleController = TextEditingController(
+      text: widget.routine.workSchedule,
+    );
+    _mealTimesController = TextEditingController(
+      text: widget.routine.mealTimes,
+    );
     _freeTimeController = TextEditingController(text: widget.routine.freeTime);
-    _workoutTimeController =
-        TextEditingController(text: widget.routine.workoutTimePreference);
+    _workoutTimeController = TextEditingController(
+      text: widget.routine.workoutTimePreference,
+    );
     _notesController = TextEditingController(text: widget.routine.notes);
   }
 
@@ -679,12 +1024,7 @@ class _EditRoutineScreenState extends State<EditRoutineScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(L.t('editRoutine')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _save,
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.save), onPressed: _save)],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -790,13 +1130,10 @@ class _PlanDetailViewState extends State<PlanDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel =
-        '${plan.date.day}/${plan.date.month}/${plan.date.year}';
+    final dateLabel = '${plan.date.day}/${plan.date.month}/${plan.date.year}';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(dateLabel),
-      ),
+      appBar: AppBar(title: Text(dateLabel)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -834,10 +1171,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
             const SizedBox(height: 16),
             Text(
               L.t('exercises'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ...plan.exercises.map((exercise) => _buildExerciseCard(exercise)),
@@ -862,12 +1196,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
             ),
             if (plan.notes.isNotEmpty) ...[
               const SizedBox(height: 16),
-              _buildSection(
-                L.t('notes'),
-                plan.notes,
-                Icons.note,
-                Colors.grey,
-              ),
+              _buildSection(L.t('notes'), plan.notes, Icons.note, Colors.grey),
             ],
           ],
         ),
@@ -875,7 +1204,12 @@ class _PlanDetailViewState extends State<PlanDetailView> {
     );
   }
 
-  Widget _buildSection(String title, String content, IconData icon, Color color) {
+  Widget _buildSection(
+    String title,
+    String content,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -909,6 +1243,8 @@ class _PlanDetailViewState extends State<PlanDetailView> {
   }
 
   Widget _buildExerciseCard(PlannedExercise exercise) {
+    final libExercise = ExerciseLibrary.findCameraExercise(exercise.name);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -926,6 +1262,32 @@ class _PlanDetailViewState extends State<PlanDetailView> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt, color: Colors.blue, size: 22),
+                  tooltip: L.t('formCheck'),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    final type = libExercise?.poseExerciseType;
+                    ExerciseType? exerciseType;
+                    if (type != null) {
+                      for (final t in ExerciseType.values) {
+                        if (t.name == type) {
+                          exerciseType = t;
+                          break;
+                        }
+                      }
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FormCheckScreen(
+                          initialExercise: exerciseType ?? ExerciseType.generic,
+                          exerciseName: exercise.name,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -954,10 +1316,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
                   '${exercise.sets} ${L.t("sets")}',
                 ),
                 const SizedBox(width: 16),
-                _buildStat(
-                  Icons.repeat,
-                  '${exercise.reps} ${L.t("reps")}',
-                ),
+                _buildStat(Icons.repeat, '${exercise.reps} ${L.t("reps")}'),
                 const SizedBox(width: 16),
                 _buildStat(
                   Icons.timer,
@@ -969,10 +1328,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
               const SizedBox(height: 8),
               Text(
                 exercise.instructions,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
             ],
           ],
@@ -986,12 +1342,17 @@ class _PlanDetailViewState extends State<PlanDetailView> {
       children: [
         Icon(icon, size: 16, color: Colors.grey),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13),
-        ),
+        Text(label, style: const TextStyle(fontSize: 13)),
       ],
     );
+  }
+
+  ExerciseType? _parseExerciseType(String? name) {
+    if (name == null) return null;
+    for (final type in ExerciseType.values) {
+      if (type.name == name) return type;
+    }
+    return null;
   }
 
   Widget _buildMealCard(PlannedMeal meal) {
@@ -1024,10 +1385,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
                   ),
                   child: Text(
                     meal.mealType,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.green),
                   ),
                 ),
               ],
@@ -1049,10 +1407,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
             const SizedBox(height: 8),
             Text(
               '${L.t("serving")}: ${meal.serving}',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -1102,7 +1457,7 @@ class _PlanDetailViewState extends State<PlanDetailView> {
 
     // Find alternative from food database
     final alternative = await _findFoodAlternative(currentMeal, reason);
-    
+
     if (!mounted) return;
 
     if (alternative != null) {
@@ -1120,7 +1475,9 @@ class _PlanDetailViewState extends State<PlanDetailView> {
               const SizedBox(height: 8),
               Text('${L.t("serving")}: ${alternative.serving}'),
               const SizedBox(height: 8),
-              Text('${alternative.calories} kcal | ${alternative.protein.toStringAsFixed(1)}g protein'),
+              Text(
+                '${alternative.calories} kcal | ${alternative.protein.toStringAsFixed(1)}g protein',
+              ),
             ],
           ),
           actions: [
@@ -1164,21 +1521,24 @@ class _PlanDetailViewState extends State<PlanDetailView> {
     );
   }
 
-  Future<FoodItem?> _findFoodAlternative(PlannedMeal currentMeal, String reason) async {
+  Future<FoodItem?> _findFoodAlternative(
+    PlannedMeal currentMeal,
+    String reason,
+  ) async {
     // Search in FoodDatabase for similar items
     final allFoods = FoodDatabase.items;
-    
+
     // Filter based on reason
     List<FoodItem> candidates = [];
-    
+
     if (reason == L.t('vegetarian')) {
       // Filter for vegetarian options
       candidates = allFoods.where((food) {
         final name = food.name.toLowerCase();
-        return !name.contains('chicken') && 
-               !name.contains('fish') && 
-               !name.contains('meat') &&
-               !name.contains('egg');
+        return !name.contains('chicken') &&
+            !name.contains('fish') &&
+            !name.contains('meat') &&
+            !name.contains('egg');
       }).toList();
     } else if (reason == L.t('allergy')) {
       // For allergies, we can't safely recommend without knowing the specific allergy
@@ -1191,23 +1551,23 @@ class _PlanDetailViewState extends State<PlanDetailView> {
         return calorieDiff < 100; // Within 100 calories
       }).toList();
     }
-    
+
     if (candidates.isEmpty) return null;
-    
+
     // Find the closest match by calories
     candidates.sort((a, b) {
       final diffA = (a.calories - currentMeal.calories).abs();
       final diffB = (b.calories - currentMeal.calories).abs();
       return diffA.compareTo(diffB);
     });
-    
+
     // Return the closest match that's not the same food
     for (final candidate in candidates) {
       if (candidate.name.toLowerCase() != currentMeal.foodName.toLowerCase()) {
         return candidate;
       }
     }
-    
+
     return candidates.first;
   }
 }

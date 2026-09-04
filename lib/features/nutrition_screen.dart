@@ -35,6 +35,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
   int? _targetCalories;
   Map<String, int>? _targetMacros;
   bool _isLoading = true;
+  bool _isMinor = false;
 
   // Daily totals
   double _consumedCalories = 0;
@@ -51,7 +52,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
   Future<void> _loadData() async {
     _profile = await UserProfileService.instance.load();
     await _nutrition.loadCustomTargets();
-    _targetCalories = _nutrition.targetCalories(_profile!);
+
+    _isMinor = _profile!.ageGroup.isMinor;
+    _targetCalories = _isMinor ? null : _nutrition.targetCalories(_profile!);
     _targetMacros = _nutrition.targetMacros(_profile!);
     _todayMeals = await _nutrition.mealsForDay(DateTime.now());
 
@@ -105,7 +108,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
     if (!camStatus.isGranted) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission is needed to analyze food photos.')),
+        const SnackBar(
+          content: Text('Camera permission is needed to analyze food photos.'),
+        ),
       );
       return;
     }
@@ -127,7 +132,11 @@ class _NutritionScreenState extends State<NutritionScreen> {
     if (!status.isGranted && !status.isLimited) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo library permission is needed to pick food images.')),
+        const SnackBar(
+          content: Text(
+            'Photo library permission is needed to pick food images.',
+          ),
+        ),
       );
       return;
     }
@@ -163,8 +172,12 @@ class _NutritionScreenState extends State<NutritionScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(image, height: 150, width: double.maxFinite,
-                    fit: BoxFit.cover),
+                child: Image.file(
+                  image,
+                  height: 150,
+                  width: double.maxFinite,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(height: 12),
               Text(analysis.summary, style: const TextStyle(fontSize: 13)),
@@ -178,13 +191,20 @@ class _NutritionScreenState extends State<NutritionScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.orange.shade700,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'These are AI estimates, not exact values. '
                           'Adjust serving sizes as needed.',
-                          style: TextStyle(fontSize: 11, color: Colors.orange.shade900),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange.shade900,
+                          ),
                         ),
                       ),
                     ],
@@ -192,21 +212,27 @@ class _NutritionScreenState extends State<NutritionScreen> {
                 ),
               if (analysis.detectedItems.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text('Detected items:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  'Detected items — tap to log:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 const SizedBox(height: 4),
-                ...analysis.detectedItems.map((item) => ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(item.name, style: const TextStyle(fontSize: 14)),
-                      subtitle: Text(
-                        '${item.calories} kcal • P${item.protein.toStringAsFixed(1)} '
-                        'C${item.carbs.toStringAsFixed(1)} F${item.fat.toStringAsFixed(1)}',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      trailing: Text(item.serving, style: const TextStyle(fontSize: 12)),
-                      onTap: () {
-                        // Add this detected item to the log.
+                ...analysis.detectedItems.map(
+                  (item) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      item.name,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      '${item.calories} kcal • P${item.protein.toStringAsFixed(1)} '
+                      'C${item.carbs.toStringAsFixed(1)} F${item.fat.toStringAsFixed(1)}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add_circle, size: 20),
+                      onPressed: () {
                         final entry = MealEntry(
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
                           date: DateTime.now(),
@@ -220,12 +246,27 @@ class _NutritionScreenState extends State<NutritionScreen> {
                         Navigator.pop(ctx);
                         _refresh();
                       },
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
         ),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+            onPressed: () {
+              Navigator.pop(ctx);
+              try {
+                if (image.existsSync()) image.deleteSync();
+              } catch (_) {}
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Photo deleted.')),
+              );
+            },
+            label: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
           if (analysis.detectedItems.isEmpty)
             TextButton(
               onPressed: () {
@@ -257,13 +298,17 @@ class _NutritionScreenState extends State<NutritionScreen> {
 
   Future<void> _showTargetSettingsSheet() async {
     final calCtrl = TextEditingController(
-        text: _targetCalories?.toString() ?? '');
+      text: _targetCalories?.toString() ?? '',
+    );
     final proteinCtrl = TextEditingController(
-        text: _targetMacros?['protein']?.toString() ?? '');
+      text: _targetMacros?['protein']?.toString() ?? '',
+    );
     final carbsCtrl = TextEditingController(
-        text: _targetMacros?['carbs']?.toString() ?? '');
+      text: _targetMacros?['carbs']?.toString() ?? '',
+    );
     final fatCtrl = TextEditingController(
-        text: _targetMacros?['fat']?.toString() ?? '');
+      text: _targetMacros?['fat']?.toString() ?? '',
+    );
 
     await showModalBottomSheet(
       context: context,
@@ -271,20 +316,26 @@ class _NutritionScreenState extends State<NutritionScreen> {
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16, right: 16, top: 16,
+          left: 16,
+          right: 16,
+          top: 16,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Set Daily Targets',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Set Daily Targets',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: calCtrl,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Calories (kcal)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -296,7 +347,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: 'Protein (g)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -307,7 +360,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: 'Carbs (g)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -318,7 +373,9 @@ class _NutritionScreenState extends State<NutritionScreen> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: 'Fat (g)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -330,9 +387,15 @@ class _NutritionScreenState extends State<NutritionScreen> {
               child: FilledButton.icon(
                 onPressed: () async {
                   final cal = int.tryParse(calCtrl.text);
-                  final p = int.tryParse(proteinCtrl.text);
-                  final c = int.tryParse(carbsCtrl.text);
-                  final f = int.tryParse(fatCtrl.text);
+                  final p = proteinCtrl.text.isNotEmpty
+                      ? (int.tryParse(proteinCtrl.text) ?? 0)
+                      : null;
+                  final c = carbsCtrl.text.isNotEmpty
+                      ? (int.tryParse(carbsCtrl.text) ?? 0)
+                      : null;
+                  final f = fatCtrl.text.isNotEmpty
+                      ? (int.tryParse(fatCtrl.text) ?? 0)
+                      : null;
                   await _nutrition.setCustomTargets(
                     calorieTarget: cal,
                     protein: p,
@@ -375,9 +438,7 @@ class _NutritionScreenState extends State<NutritionScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final target = _targetCalories;
@@ -387,8 +448,10 @@ class _NutritionScreenState extends State<NutritionScreen> {
       textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(L.t('nutritionLog'),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(
+            L.t('nutritionLog'),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.tune),
@@ -412,6 +475,31 @@ class _NutritionScreenState extends State<NutritionScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (_isMinor)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          L.t('minorCalorieNotice'),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               _buildSummaryCard(target),
               const SizedBox(height: 16),
               _buildMacroBreakdown(),
@@ -456,10 +544,14 @@ class _NutritionScreenState extends State<NutritionScreen> {
                 Text(
                   '$consumed',
                   style: const TextStyle(
-                      fontSize: 40, fontWeight: FontWeight.bold),
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
-                  target != null ? ' / $target ${L.t('calories')}' : ' ${L.t('calories')}',
+                  target != null
+                      ? ' / $target ${L.t('calories')}'
+                      : ' ${L.t('calories')}',
                   style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                 ),
               ],
@@ -503,14 +595,26 @@ class _NutritionScreenState extends State<NutritionScreen> {
     final macros = _targetMacros;
     return Row(
       children: [
-        _macroChip(L.t('protein'), _consumedProtein, Colors.blue,
-            target: macros?['protein']),
+        _macroChip(
+          L.t('protein'),
+          _consumedProtein,
+          Colors.blue,
+          target: macros?['protein'],
+        ),
         const SizedBox(width: 8),
-        _macroChip(L.t('carbs'), _consumedCarbs, Colors.amber,
-            target: macros?['carbs']),
+        _macroChip(
+          L.t('carbs'),
+          _consumedCarbs,
+          Colors.amber,
+          target: macros?['carbs'],
+        ),
         const SizedBox(width: 8),
-        _macroChip(L.t('fat'), _consumedFat, Colors.purple,
-            target: macros?['fat']),
+        _macroChip(
+          L.t('fat'),
+          _consumedFat,
+          Colors.purple,
+          target: macros?['fat'],
+        ),
       ],
     );
   }
@@ -525,12 +629,24 @@ class _NutritionScreenState extends State<NutritionScreen> {
         ),
         child: Column(
           children: [
-            Text(label,
-                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
-              target != null ? '${grams.round()}g / ${target}g' : '${grams.round()}g',
-              style: TextStyle(fontSize: target != null ? 13 : 16, fontWeight: FontWeight.bold, color: color),
+              target != null
+                  ? '${grams.round()}g / ${target}g'
+                  : '${grams.round()}g',
+              style: TextStyle(
+                fontSize: target != null ? 13 : 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -545,7 +661,11 @@ class _NutritionScreenState extends State<NutritionScreen> {
           padding: const EdgeInsets.symmetric(vertical: 40),
           child: Column(
             children: [
-              Icon(Icons.restaurant_outlined, size: 48, color: Colors.grey.shade300),
+              Icon(
+                Icons.restaurant_outlined,
+                size: 48,
+                color: Colors.grey.shade300,
+              ),
               const SizedBox(height: 12),
               Text(
                 '${L.t('noMealsLogged')}\n${L.t('tapToAdd')}',
@@ -589,9 +709,15 @@ class _NutritionScreenState extends State<NutritionScreen> {
       padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Row(
         children: [
-          Text(type, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          Text(
+            type,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
           const SizedBox(width: 8),
-          Text('$typeCalories kcal', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            '$typeCalories kcal',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
         ],
       ),
     );
@@ -614,24 +740,41 @@ class _NutritionScreenState extends State<NutritionScreen> {
           leading: meal.photoPath != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.file(File(meal.photoPath!),
-                      width: 40, height: 40, fit: BoxFit.cover),
+                  child: Image.file(
+                    File(meal.photoPath!),
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
                 )
               : CircleAvatar(
                   backgroundColor: Colors.blue.shade50,
-                  child: Icon(Icons.restaurant, size: 18, color: Colors.blue.shade700),
+                  child: Icon(
+                    Icons.restaurant,
+                    size: 18,
+                    color: Colors.blue.shade700,
+                  ),
                 ),
           title: Row(
             children: [
               Flexible(
-                child: Text(meal.food.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  meal.food.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (meal.aiEstimated == true)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
-                  child: Icon(Icons.auto_awesome, size: 12, color: Colors.orange.shade400),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: 12,
+                    color: Colors.orange.shade400,
+                  ),
                 ),
             ],
           ),
@@ -641,8 +784,22 @@ class _NutritionScreenState extends State<NutritionScreen> {
             'F${meal.totalFat.toStringAsFixed(0)}',
             style: const TextStyle(fontSize: 11),
           ),
-          trailing: Text('${meal.totalCalories} kcal',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                tooltip: 'Delete',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _removeMeal(meal.id),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${meal.totalCalories} kcal',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -702,8 +859,10 @@ class _AddMealSheetState extends State<_AddMealSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(L.t('logFood'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              L.t('logFood'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _searchController,
@@ -729,7 +888,10 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   itemBuilder: (ctx, i) {
                     final food = _results[i];
                     return ListTile(
-                      title: Text(food.name, style: const TextStyle(fontSize: 14)),
+                      title: Text(
+                        food.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
                       subtitle: Text(
                         '${food.serving} • ${food.calories} kcal • '
                         'P${food.protein.toStringAsFixed(1)} '
@@ -764,10 +926,17 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(food.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text('${food.serving} • ${food.calories} kcal',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        food.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${food.serving} • ${food.calories} kcal',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                 ),

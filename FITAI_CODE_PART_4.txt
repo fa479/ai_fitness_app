@@ -1,0 +1,2660 @@
+
+    setState(() {
+      customExercises.removeAt(index);
+    });
+
+    await saveCustomExercises();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(L.t('exerciseDeletedMsg'))));
+  }
+
+  Future<void> editCustomExercise(int index) async {
+    final exercise = customExercises[index];
+
+    final nameController = TextEditingController(text: exercise['name']);
+
+    final muscleController = TextEditingController(text: exercise['muscle']);
+
+    final setsController = TextEditingController(
+      text: exercise['sets'].toString(),
+    );
+
+    final repsController = TextEditingController(
+      text: exercise['reps'].toString(),
+    );
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(L.t('editExercise')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: L.t('exerciseName')),
+                ),
+                TextField(
+                  controller: muscleController,
+                  decoration: InputDecoration(labelText: L.t('muscleGroup')),
+                ),
+                TextField(
+                  controller: setsController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: L.t('sets')),
+                ),
+                TextField(
+                  controller: repsController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: L.t('repetitions')),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: Text(L.t('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+
+                if (name.isEmpty) return;
+
+                Navigator.pop(dialogContext, {
+                  'name': name,
+                  'muscle': muscleController.text.trim().isEmpty
+                      ? 'Custom'
+                      : muscleController.text.trim(),
+                  'sets': int.tryParse(setsController.text) ?? 3,
+                  'reps': int.tryParse(repsController.text) ?? 10,
+                });
+              },
+              child: Text(L.t('saveChanges')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null) return;
+
+    setState(() {
+      customExercises[index] = result;
+    });
+
+    await saveCustomExercises();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(L.t('exerciseUpdatedMsg'))),
+    );
+  }
+
+  Future<void> hideDefaultExercise(Map<String, dynamic> exercise) async {
+    final name = exercise['name'] as String;
+
+    setState(() {
+      hiddenDefaultExercises.add(name);
+    });
+
+    await saveHiddenDefaults();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$name ${L.t("hiddenMsg")}')),
+    );
+  }
+
+  Future<void> showDefaultExercise(Map<String, dynamic> exercise) async {
+    final name = exercise['name'] as String;
+
+    setState(() {
+      hiddenDefaultExercises.remove(name);
+    });
+
+    await saveHiddenDefaults();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$name ${L.t("restoredMsg")}')));
+  }
+
+  Widget buildExerciseTile(
+    Map<String, dynamic> exercise, {
+    required bool isCustom,
+    int? customIndex,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        leading: const Icon(
+          Icons.fitness_center,
+          color: Colors.deepPurpleAccent,
+          size: 28,
+        ),
+        title: Text(
+          exercise['name'],
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${exercise['muscle']} � '
+          '${exercise['sets']} sets � '
+          '${exercise['reps']} reps',
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'edit' && customIndex != null) {
+              editCustomExercise(customIndex);
+            }
+
+            if (value == 'delete' && customIndex != null) {
+              deleteCustomExercise(customIndex);
+            }
+
+            if (value == 'hide') {
+              hideDefaultExercise(exercise);
+            }
+
+            if (value == 'restore') {
+              showDefaultExercise(exercise);
+            }
+          },
+          itemBuilder: (context) {
+            if (isCustom) {
+              return [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit_outlined),
+                      const SizedBox(width: 10),
+                      Text(L.t('edit')),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete_outline),
+                      const SizedBox(width: 10),
+                      Text(L.t('delete')),
+                    ],
+                  ),
+                ),
+              ];
+            }
+
+            final isHidden = hiddenDefaultExercises.contains(exercise['name']);
+
+            return [
+              PopupMenuItem(
+                value: isHidden ? 'restore' : 'hide',
+                child: Row(
+                  children: [
+                    Icon(
+                      isHidden
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(isHidden ? L.t('restore') : L.t('hide')),
+                  ],
+                ),
+              ),
+            ];
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleDefaults = defaultExercises
+        .where((exercise) => !hiddenDefaultExercises.contains(exercise['name']))
+        .toList();
+    final hiddenDefaults = defaultExercises
+        .where((exercise) => hiddenDefaultExercises.contains(exercise['name']))
+        .toList();
+    return Scaffold(
+      appBar: AppBar(title: Text(L.t('exerciseLibrary'))),
+
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (visibleDefaults.isNotEmpty) ...[
+            Text(
+              L.t('defaultExercises'),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 15),
+
+            ...visibleDefaults.map(
+              (exercise) => buildExerciseTile(exercise, isCustom: false),
+            ),
+          ],
+          if (hiddenDefaults.isNotEmpty) ...[
+            const SizedBox(height: 15),
+
+            Text(
+              L.t('hiddenExercises'),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 15),
+
+            ...hiddenDefaults.map(
+              (exercise) => buildExerciseTile(exercise, isCustom: false),
+            ),
+          ],
+          if (customExercises.isNotEmpty) ...[
+            const SizedBox(height: 15),
+
+            Text(
+              L.t('myExercises'),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 15),
+
+            ...customExercises.asMap().entries.map(
+              (entry) => buildExerciseTile(
+                entry.value,
+                isCustom: true,
+                customIndex: entry.key,
+              ),
+            ),
+          ],
+
+          if (visibleDefaults.isEmpty &&
+              hiddenDefaults.isEmpty &&
+              customExercises.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 50),
+              child: Center(
+                child: Text(
+                  L.t('noExercises'),
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 90),
+        ],
+      ),
+
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: addCustomExercise,
+        icon: const Icon(Icons.add),
+        label: Text(L.t('addExercise')),
+      ),
+    );
+  }
+}
+
+
+
+==================== .\lib\core\pose_analyzer.dart ====================
+
+import 'dart:math' as math;
+
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+
+enum ExerciseType {
+  squat,
+  pushup,
+  bicepCurl,
+  shoulderPress,
+  lunge,
+  jumpingJack,
+  plank,
+  generic;
+
+  String get displayName {
+    switch (this) {
+      case ExerciseType.squat:
+        return 'Squat';
+      case ExerciseType.pushup:
+        return 'Push-up';
+      case ExerciseType.bicepCurl:
+        return 'Bicep Curl';
+      case ExerciseType.shoulderPress:
+        return 'Shoulder Press';
+      case ExerciseType.lunge:
+        return 'Lunge';
+      case ExerciseType.jumpingJack:
+        return 'Jumping Jack';
+      case ExerciseType.plank:
+        return 'Plank Hold';
+      case ExerciseType.generic:
+        return 'Free Form';
+    }
+  }
+
+  String get instruction {
+    switch (this) {
+      case ExerciseType.squat:
+        return 'Stand sideways to the camera. Squat down, then stand up fully.';
+      case ExerciseType.pushup:
+        return 'Place the camera at floor level. Lower your body, then push back up.';
+      case ExerciseType.bicepCurl:
+        return 'Face the camera. Curl your arm up, then extend it fully.';
+      case ExerciseType.shoulderPress:
+        return 'Face the camera. Press your arms overhead, then lower them.';
+      case ExerciseType.lunge:
+        return 'Stand sideways. Lower into a lunge, then return to standing.';
+      case ExerciseType.jumpingJack:
+        return 'Keep your full body in frame. Raise your arms and spread your legs.';
+      case ExerciseType.plank:
+        return 'Use a side view. Keep your shoulders, hips and ankles aligned.';
+      case ExerciseType.generic:
+        return 'Move freely while your body is tracked.';
+    }
+  }
+}
+
+enum FormQuality {
+  good,
+  warning,
+  poor,
+  none,
+}
+
+class PoseAnalysis {
+  final int reps;
+  final double primaryAngle;
+  final FormQuality formQuality;
+  final String feedback;
+  final bool bodyDetected;
+  final ExerciseType exercise;
+  final String formIssueKey;
+
+  const PoseAnalysis({
+    this.reps = 0,
+    this.primaryAngle = 0,
+    this.formQuality = FormQuality.none,
+    this.feedback = '',
+    this.bodyDetected = false,
+    this.exercise = ExerciseType.generic,
+    this.formIssueKey = '',
+  });
+}
+
+double angleAt(
+  PoseLandmark a,
+  PoseLandmark b,
+  PoseLandmark c,
+) {
+  final radians =
+      math.atan2(c.y - b.y, c.x - b.x) -
+      math.atan2(a.y - b.y, a.x - b.x);
+
+  var degrees = (radians * 180 / math.pi).abs();
+
+  if (degrees > 180) {
+    degrees = 360 - degrees;
+  }
+
+  return degrees;
+}
+
+enum _RepPhase {
+  up,
+  down,
+}
+
+enum _SquatState {
+  waitingForStanding,
+  ready,
+  descending,
+  bottom,
+  rising,
+}
+
+class PoseAnalyzer {
+  ExerciseType _exercise = ExerciseType.squat;
+
+  int _reps = 0;
+  _RepPhase _phase = _RepPhase.up;
+
+  _SquatState _squatState = _SquatState.waitingForStanding;
+
+  // ------------------------------------------------------------
+  // Squat standing confirmation
+  // ------------------------------------------------------------
+  //
+  // A single standing frame is not enough to start the rep cycle.
+  // We require several consecutive standing frames.
+  //
+  static const int _requiredStandingFrames = 8;
+  int _standingFrames = 0;
+
+  // ------------------------------------------------------------
+  // Set tracking
+  // ------------------------------------------------------------
+
+  int _currentSet = 1;
+  int _completedSets = 0;
+  int _targetSets = 0;
+  int _targetRepsPerSet = 0;
+  bool _exerciseCompleted = false;
+
+  static const double _minConfidence = 0.5;
+
+  ExerciseType get exercise => _exercise;
+
+  int get reps => _reps;
+  int get currentSet => _currentSet;
+  int get completedSets => _completedSets;
+  int get targetSets => _targetSets;
+  int get targetRepsPerSet => _targetRepsPerSet;
+  bool get exerciseCompleted => _exerciseCompleted;
+
+  void configureSets({
+    required int targetSets,
+    required int targetRepsPerSet,
+  }) {
+    _targetSets = targetSets;
+    _targetRepsPerSet = targetRepsPerSet;
+
+    _currentSet = 1;
+    _completedSets = 0;
+    _exerciseCompleted = false;
+
+    // Do not allow a previous pose cycle to leak into a new set.
+    _squatState = _SquatState.waitingForStanding;
+    _standingFrames = 0;
+    _phase = _RepPhase.up;
+  }
+
+  void setExercise(ExerciseType type) {
+    _exercise = type;
+    reset();
+  }
+
+  void reset() {
+    _reps = 0;
+    _phase = _RepPhase.up;
+
+    // IMPORTANT:
+    // Every reset starts by waiting for a real standing position.
+    // This prevents the initial camera pose from being interpreted
+    // as the end of a repetition.
+    _squatState = _SquatState.waitingForStanding;
+    _standingFrames = 0;
+
+    _currentSet = 1;
+    _completedSets = 0;
+    _exerciseCompleted = false;
+  }
+
+  /// Returns true when the current set has just been completed.
+  bool _checkSetCompletion() {
+    if (_targetRepsPerSet <= 0) {
+      return false;
+    }
+
+    if (_reps < _targetRepsPerSet) {
+      return false;
+    }
+
+    _completedSets = _currentSet;
+
+    if (_currentSet >= _targetSets) {
+      _exerciseCompleted = true;
+
+      // Final set is complete.
+      // Keep the completed state; no next set exists.
+      _phase = _RepPhase.up;
+      _squatState = _SquatState.ready;
+      _standingFrames = 0;
+
+      return true;
+    }
+
+    // Move to the next set.
+    _currentSet++;
+
+    // Start the next set with zero reps.
+    _reps = 0;
+
+    // IMPORTANT:
+    // The user has just completed a rep by reaching full standing.
+    // They are already in a valid standing position, so do NOT
+    // require another 8 standing frames before allowing the
+    // next descent.
+    //
+    // This allows:
+    // Set 1 complete -> immediately start Set 2
+    // Set 2 complete -> immediately start Set 3
+    _phase = _RepPhase.up;
+    _squatState = _SquatState.ready;
+    _standingFrames = 0;
+
+    return true;
+  }
+
+
+ 
+  PoseLandmark? _get(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+    PoseLandmarkType type,
+  ) {
+    final landmark = landmarks[type];
+
+    if (landmark == null) {
+      return null;
+    }
+
+    if (landmark.likelihood < _minConfidence) {
+      return null;
+    }
+
+    return landmark;
+  }
+  ({
+    PoseLandmark a,
+    PoseLandmark b,
+    PoseLandmark c,
+  })? _bestJoint(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+    PoseLandmarkType aLeft,
+    PoseLandmarkType bLeft,
+    PoseLandmarkType cLeft,
+  ) {
+    final a = _get(landmarks, aLeft);
+    final b = _get(landmarks, bLeft);
+    final c = _get(landmarks, cLeft);
+
+    if (a != null && b != null && c != null) {
+      return (a: a, b: b, c: c);
+    }
+
+    final aRight = _get(landmarks, _mirror(aLeft));
+    final bRight = _get(landmarks, _mirror(bLeft));
+    final cRight = _get(landmarks, _mirror(cLeft));
+
+    if (aRight != null && bRight != null && cRight != null) {
+      return (a: aRight, b: bRight, c: cRight);
+    }
+
+    return null;
+  }
+
+  PoseLandmarkType _mirror(PoseLandmarkType type) {
+    final name = type.name;
+
+    if (name.startsWith('left')) {
+      final target = 'right${name.substring(4)}';
+
+      return PoseLandmarkType.values.firstWhere(
+        (e) => e.name == target,
+        orElse: () => type,
+      );
+    }
+
+    if (name.startsWith('right')) {
+      final target = 'left${name.substring(5)}';
+
+      return PoseLandmarkType.values.firstWhere(
+        (e) => e.name == target,
+        orElse: () => type,
+      );
+    }
+
+    return type;
+  }
+
+  PoseAnalysis analyze(Pose? pose) {
+    if (pose == null || pose.landmarks.isEmpty) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        feedback: 'No body detected - step into frame.',
+        bodyDetected: false,
+      );
+    }
+
+    final landmarks = pose.landmarks;
+
+    final hasShoulder =
+        _get(landmarks, PoseLandmarkType.leftShoulder) != null ||
+        _get(landmarks, PoseLandmarkType.rightShoulder) != null;
+
+    final hasHip =
+        _get(landmarks, PoseLandmarkType.leftHip) != null ||
+        _get(landmarks, PoseLandmarkType.rightHip) != null;
+
+    if (!hasShoulder && !hasHip) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        feedback: 'Step back so your body is visible.',
+        bodyDetected: false,
+      );
+    }
+
+    switch (_exercise) {
+      case ExerciseType.squat:
+        return _analyzeSquat(landmarks);
+
+      case ExerciseType.pushup:
+        return _analyzePushup(landmarks);
+
+      case ExerciseType.bicepCurl:
+        return _analyzeBicepCurl(landmarks);
+
+      case ExerciseType.shoulderPress:
+        return _analyzeShoulderPress(landmarks);
+
+      case ExerciseType.lunge:
+        return _analyzeLunge(landmarks);
+
+      case ExerciseType.jumpingJack:
+        return _analyzeJumpingJack(landmarks);
+
+      case ExerciseType.plank:
+        return _analyzePlank(landmarks);
+
+      case ExerciseType.generic:
+        return _analyzeGeneric(landmarks);
+    }
+  }
+
+  // ================================================================
+  // SQUAT
+  // ================================================================
+
+  PoseAnalysis _analyzeSquat(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftHip,
+      PoseLandmarkType.leftKnee,
+      PoseLandmarkType.leftAnkle,
+    );
+
+    if (joint == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Legs not visible - show your lower body.',
+        bodyDetected: true,
+      );
+    }
+
+    final kneeAngle = angleAt(
+      joint.a,
+      joint.b,
+      joint.c,
+    );
+
+    final isStanding = kneeAngle >= 155;
+    final isDescending = kneeAngle <= 140;
+    final isBottom = kneeAngle <= 125;
+
+    // ------------------------------------------------------------
+    // REAL SQUAT STATE MACHINE
+    // ------------------------------------------------------------
+    //
+    // waitingForStanding
+    //       ?
+    // confirmed standing
+    //       ?
+    // ready
+    //       ?
+    // descending
+    //       ?
+    // bottom
+    //       ?
+    // rising
+    //       ?
+    // FULL STANDING
+    //       ?
+    // REP + 1
+    //
+    // The critical rule:
+    // A rep can NEVER be counted unless the body first went through
+    // the descending + bottom states.
+    // ------------------------------------------------------------
+
+    switch (_squatState) {
+      case _SquatState.waitingForStanding:
+        _phase = _RepPhase.up;
+
+        if (isStanding) {
+          _standingFrames++;
+
+          if (_standingFrames >= _requiredStandingFrames) {
+            _squatState = _SquatState.ready;
+            _standingFrames = 0;
+          }
+        } else {
+          _standingFrames = 0;
+        }
+        break;
+
+      case _SquatState.ready:
+        _phase = _RepPhase.up;
+
+        // Wait for a genuine descent.
+        if (isDescending) {
+          _squatState = _SquatState.descending;
+          _phase = _RepPhase.down;
+        }
+        break;
+
+      case _SquatState.descending:
+        _phase = _RepPhase.down;
+
+        // Must reach proper squat depth.
+        if (isBottom) {
+          _squatState = _SquatState.bottom;
+        } else if (isStanding) {
+          // Person returned up before reaching the bottom.
+          // Do NOT count a rep.
+          _squatState = _SquatState.ready;
+          _phase = _RepPhase.up;
+        }
+        break;
+
+      case _SquatState.bottom:
+        _phase = _RepPhase.down;
+
+        // Start rising only after leaving the bottom.
+        if (kneeAngle >= 135) {
+          _squatState = _SquatState.rising;
+          _phase = _RepPhase.up;
+        }
+        break;
+
+      case _SquatState.rising:
+  _phase = _RepPhase.up;
+
+  // Full extension completes the repetition.
+  if (isStanding) {
+    _reps++;
+
+    final setCompleted = _checkSetCompletion();
+
+    if (!setCompleted) {
+      // The user is already standing after completing
+      // the rep, so immediately become ready for the
+      // next descent. Do NOT require another 8-frame
+      // standing confirmation.
+      _squatState = _SquatState.ready;
+      _standingFrames = 0;
+    }
+  } else if (isBottom) {
+    // Person dropped back down while rising.
+    _squatState = _SquatState.bottom;
+    _phase = _RepPhase.down;
+  }
+  break;
+    }
+
+    // ------------------------------------------------------------
+    // FORM CHECKING
+    // ------------------------------------------------------------
+
+    var quality = FormQuality.good;
+    String issueKey = '';
+
+    if ((_squatState == _SquatState.bottom ||
+            _squatState == _SquatState.rising) &&
+        kneeAngle > 125) {
+      issueKey = 'formDepthLow';
+      quality = FormQuality.warning;
+    }
+
+    final kneeX = joint.b.x;
+    final ankleX = joint.c.x;
+
+    if (issueKey.isEmpty &&
+        (kneeX - ankleX).abs() > 0.15) {
+      issueKey = 'formKneeAlign';
+      quality = FormQuality.warning;
+    }
+
+    final hip =
+        _get(landmarks, PoseLandmarkType.leftHip) ??
+        _get(landmarks, PoseLandmarkType.rightHip);
+
+    final shoulder =
+        _get(landmarks, PoseLandmarkType.leftShoulder) ??
+        _get(landmarks, PoseLandmarkType.rightShoulder);
+
+    if (issueKey.isEmpty &&
+        hip != null &&
+        shoulder != null &&
+        kneeAngle < 135) {
+      final horizontal =
+          (shoulder.x - hip.x).abs();
+
+      final vertical =
+          (shoulder.y - hip.y).abs();
+
+      if (vertical > 0.01 &&
+          horizontal / vertical > 1.2) {
+        issueKey = 'formTorsoLean';
+        quality = FormQuality.warning;
+      }
+    }
+
+    // ------------------------------------------------------------
+    // FEEDBACK
+    // ------------------------------------------------------------
+
+    String feedback;
+
+    if (issueKey.isNotEmpty) {
+      feedback = _issueKeyToEnglish(issueKey);
+    } else {
+      switch (_squatState) {
+        case _SquatState.waitingForStanding:
+          feedback = _reps == 0
+              ? 'Stand tall to begin.'
+              : 'Stand tall to get ready.';
+          break;
+
+        case _SquatState.ready:
+          feedback = 'Ready - squat down.';
+          break;
+
+        case _SquatState.descending:
+          feedback = 'Keep going down.';
+          break;
+
+        case _SquatState.bottom:
+          feedback = 'Good depth - stand up.';
+          break;
+
+        case _SquatState.rising:
+          feedback = 'Stand up fully.';
+          break;
+      }
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: kneeAngle,
+      formQuality: quality,
+      feedback: feedback,
+      bodyDetected: true,
+      formIssueKey: issueKey,
+    );
+  }
+
+  // ================================================================
+  // PUSH-UP
+  // ================================================================
+
+  PoseAnalysis _analyzePushup(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.leftWrist,
+    );
+
+    if (joint == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Arms not visible - adjust the camera.',
+        bodyDetected: true,
+      );
+    }
+
+    final elbowAngle = angleAt(
+      joint.a,
+      joint.b,
+      joint.c,
+    );
+
+    String issueKey = '';
+    var quality = FormQuality.good;
+
+    final hip = _get(
+      landmarks,
+      PoseLandmarkType.leftHip,
+    );
+
+    final shoulder = _get(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+    );
+
+    final ankle = _get(
+      landmarks,
+      PoseLandmarkType.leftAnkle,
+    );
+
+    if (hip != null &&
+        shoulder != null &&
+        ankle != null) {
+      final bodyAngle = angleAt(
+        shoulder,
+        hip,
+        ankle,
+      );
+
+      if ((bodyAngle - 180).abs() > 30) {
+        issueKey = 'formBodyStraight';
+        quality = FormQuality.warning;
+      }
+    }
+
+    if (elbowAngle < 90) {
+      _phase = _RepPhase.down;
+    } else if (elbowAngle > 160 &&
+        _phase == _RepPhase.down) {
+      _phase = _RepPhase.up;
+      _reps++;
+      _checkSetCompletion();
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: elbowAngle,
+      formQuality: quality,
+      feedback: issueKey.isEmpty
+          ? (elbowAngle < 90
+              ? 'Good depth!'
+              : 'Lower for full range.')
+          : _issueKeyToEnglish(issueKey),
+      bodyDetected: true,
+      formIssueKey: issueKey,
+    );
+  }
+
+  // ================================================================
+  // BICEP CURL
+  // ================================================================
+
+  PoseAnalysis _analyzeBicepCurl(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.leftWrist,
+    );
+
+    if (joint == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Arm not visible - face the camera.',
+        bodyDetected: true,
+      );
+    }
+
+    final elbowAngle = angleAt(
+      joint.a,
+      joint.b,
+      joint.c,
+    );
+
+    var quality = FormQuality.good;
+    String issueKey = '';
+
+    final dy = (joint.a.y - joint.b.y).abs();
+    final dx = (joint.a.x - joint.b.x).abs();
+
+    if (dy > 0.01 && dx / dy > 0.6) {
+      issueKey = 'formElbowStill';
+      quality = FormQuality.warning;
+    }
+
+    if (elbowAngle < 50) {
+      _phase = _RepPhase.down;
+    } else if (elbowAngle > 160 &&
+        _phase == _RepPhase.down) {
+      _phase = _RepPhase.up;
+      _reps++;
+      _checkSetCompletion();
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: elbowAngle,
+      formQuality: quality,
+      feedback: issueKey.isEmpty
+          ? (elbowAngle < 50
+              ? 'Full curl!'
+              : 'Curl higher.')
+          : _issueKeyToEnglish(issueKey),
+      bodyDetected: true,
+      formIssueKey: issueKey,
+    );
+  }
+
+  // ================================================================
+  // SHOULDER PRESS
+  // ================================================================
+
+  PoseAnalysis _analyzeShoulderPress(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.leftWrist,
+    );
+
+    if (joint == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Arms not visible - face the camera.',
+        bodyDetected: true,
+      );
+    }
+
+    final elbowAngle = angleAt(
+      joint.a,
+      joint.b,
+      joint.c,
+    );
+
+    var quality = FormQuality.good;
+    String issueKey = '';
+
+    if (elbowAngle > 160 &&
+        joint.c.y > joint.a.y) {
+      issueKey = 'formPressHigher';
+      quality = FormQuality.warning;
+    }
+
+    if (elbowAngle < 90) {
+      _phase = _RepPhase.down;
+    } else if (elbowAngle > 160 &&
+        _phase == _RepPhase.down) {
+      _phase = _RepPhase.up;
+      _reps++;
+      _checkSetCompletion();
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: elbowAngle,
+      formQuality: quality,
+      feedback: issueKey.isEmpty
+          ? (elbowAngle > 160
+              ? 'Full press!'
+              : 'Press higher.')
+          : _issueKeyToEnglish(issueKey),
+      bodyDetected: true,
+      formIssueKey: issueKey,
+    );
+  }
+
+  // ================================================================
+  // LUNGE
+  // ================================================================
+
+  PoseAnalysis _analyzeLunge(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftHip,
+      PoseLandmarkType.leftKnee,
+      PoseLandmarkType.leftAnkle,
+    );
+
+    if (joint == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Legs not visible - stand sideways.',
+        bodyDetected: true,
+      );
+    }
+
+    final kneeAngle = angleAt(
+      joint.a,
+      joint.b,
+      joint.c,
+    );
+
+    var quality = FormQuality.good;
+    String issueKey = '';
+
+    if ((joint.b.x - joint.c.x).abs() > 0.15) {
+      issueKey = 'formKneeAlign';
+      quality = FormQuality.warning;
+    }
+
+    if (kneeAngle < 100) {
+      _phase = _RepPhase.down;
+    } else if (kneeAngle > 160 &&
+        _phase == _RepPhase.down) {
+      _phase = _RepPhase.up;
+      _reps++;
+      _checkSetCompletion();
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: kneeAngle,
+      formQuality: quality,
+      feedback: issueKey.isEmpty
+          ? (kneeAngle < 100
+              ? 'Good depth!'
+              : 'Lower for full depth.')
+          : _issueKeyToEnglish(issueKey),
+      bodyDetected: true,
+      formIssueKey: issueKey,
+    );
+  }
+
+  // ================================================================
+  // JUMPING JACK
+  // ================================================================
+
+  PoseAnalysis _analyzeJumpingJack(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final shoulder =
+        _get(
+          landmarks,
+          PoseLandmarkType.leftShoulder,
+        ) ??
+        _get(
+          landmarks,
+          PoseLandmarkType.rightShoulder,
+        );
+
+    final wrist =
+        _get(
+          landmarks,
+          PoseLandmarkType.leftWrist,
+        ) ??
+        _get(
+          landmarks,
+          PoseLandmarkType.rightWrist,
+        );
+
+    if (shoulder == null || wrist == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Full body not visible - step back.',
+        bodyDetected: true,
+      );
+    }
+
+    final armsUp = wrist.y < shoulder.y;
+
+    if (armsUp) {
+      _phase = _RepPhase.down;
+    } else if (_phase == _RepPhase.down) {
+      _phase = _RepPhase.up;
+      _reps++;
+      _checkSetCompletion();
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle:
+          (shoulder.y - wrist.y) * 100,
+      formQuality: FormQuality.good,
+      feedback: armsUp
+          ? 'Arms up - good!'
+          : 'Raise your arms higher.',
+      bodyDetected: true,
+    );
+  }
+
+  // ================================================================
+  // PLANK
+  // ================================================================
+
+  PoseAnalysis _analyzePlank(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final hip = _get(
+      landmarks,
+      PoseLandmarkType.leftHip,
+    );
+
+    final shoulder = _get(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+    );
+
+    final ankle = _get(
+      landmarks,
+      PoseLandmarkType.leftAnkle,
+    );
+
+    if (hip == null ||
+        shoulder == null ||
+        ankle == null) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        feedback: 'Body not fully visible - use side view.',
+        bodyDetected: true,
+      );
+    }
+
+    final bodyAngle = angleAt(
+      shoulder,
+      hip,
+      ankle,
+    );
+
+    final deviation =
+        (bodyAngle - 180).abs();
+
+    if (deviation < 15) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        primaryAngle: bodyAngle,
+        formQuality: FormQuality.good,
+        feedback:
+            'Great plank - body is straight!',
+        bodyDetected: true,
+      );
+    }
+
+    if (deviation < 30) {
+      return PoseAnalysis(
+        exercise: _exercise,
+        reps: _reps,
+        primaryAngle: bodyAngle,
+        formQuality: FormQuality.warning,
+        feedback: hip.y > shoulder.y
+            ? 'Keep your hips from sagging.'
+            : 'Lower your hips slightly.',
+        bodyDetected: true,
+      );
+    }
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: bodyAngle,
+      formQuality: FormQuality.poor,
+      feedback: hip.y > shoulder.y
+          ? 'Straighten your body line.'
+          : 'Bring your hips down.',
+      bodyDetected: true,
+    );
+  }
+
+  // ================================================================
+  // GENERIC
+  // ================================================================
+
+  PoseAnalysis _analyzeGeneric(
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+  ) {
+    final joint = _bestJoint(
+      landmarks,
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.leftWrist,
+    );
+
+    final angle = joint == null
+        ? 0.0
+        : angleAt(
+            joint.a,
+            joint.b,
+            joint.c,
+          );
+
+    return PoseAnalysis(
+      exercise: _exercise,
+      reps: _reps,
+      primaryAngle: angle,
+      formQuality: FormQuality.none,
+      feedback: joint != null
+          ? 'Elbow angle: ${angle.round()}�'
+          : 'Body detected - move freely.',
+      bodyDetected: true,
+    );
+  }
+
+  // ================================================================
+  // FORM FEEDBACK
+  // ================================================================
+
+  String _issueKeyToEnglish(String key) {
+    switch (key) {
+      case 'formDepthLow':
+        return 'Go a little lower for full depth.';
+
+      case 'formKneeAlign':
+        return 'Keep your knees aligned with your toes.';
+
+      case 'formTorsoLean':
+        return 'Keep your chest more upright.';
+
+      case 'formNotStanding':
+        return 'Stand fully upright to complete the repetition.';
+
+      case 'formBodyStraight':
+        return 'Keep your body straighter.';
+
+      case 'formElbowStill':
+        return 'Keep your elbow more still.';
+
+      case 'formPressHigher':
+        return 'Press your arms higher overhead.';
+
+      case 'formHipDrop':
+        return 'Keep your hips level.';
+
+      default:
+        return '';
+    }
+  }
+}
+
+// ================================================================
+// SKELETON CONNECTIONS
+// ================================================================
+
+const List<List<PoseLandmarkType>> skeletonConnections = [
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftEar,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightEar,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftElbow,
+  ],
+  [
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.leftWrist,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightElbow,
+  ],
+  [
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.rightWrist,
+  ],
+  [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.leftHip,
+  ],
+  [
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.rightHip,
+  ],
+  [
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.rightHip,
+  ],
+  [
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.leftKnee,
+  ],
+  [
+    PoseLandmarkType.leftKnee,
+    PoseLandmarkType.leftAnkle,
+  ],
+  [
+    PoseLandmarkType.leftAnkle,
+    PoseLandmarkType.leftHeel,
+  ],
+  [
+    PoseLandmarkType.leftHeel,
+    PoseLandmarkType.leftFootIndex,
+  ],
+  [
+    PoseLandmarkType.rightHip,
+    PoseLandmarkType.rightKnee,
+  ],
+  [
+    PoseLandmarkType.rightKnee,
+    PoseLandmarkType.rightAnkle,
+  ],
+  [
+    PoseLandmarkType.rightAnkle,
+    PoseLandmarkType.rightHeel,
+  ],
+  [
+    PoseLandmarkType.rightHeel,
+    PoseLandmarkType.rightFootIndex,
+  ],
+];
+
+==================== .\lib\core\ai_coach_engine.dart ====================
+
+/// FitAI Multilingual AI Coach Engine
+///
+/// A rule-based, on-device fitness coach that replies in the user's
+/// selected language and uses their profile (age, height, weight, goal,
+/// activity, experience) to personalize advice. It is intentionally honest
+/// about being an on-device coach: it never fabricates medical advice or
+/// invents precise numbers, and it directs clinical questions to a
+/// professional. When a Gemini API key is configured in Settings the
+/// engine can optionally forward to a real LLM for richer conversation.
+library;
+
+import 'dart:convert';
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
+import '../app/app_localizations.dart' show L;
+import 'user_profile_service.dart';
+
+/// Intent detected from the user's message.
+enum CoachIntent {
+  greeting,
+  workoutPlan,
+  nutrition,
+  weightLoss,
+  muscleGain,
+  recovery,
+  form,
+  motivation,
+  capabilities,
+  profile,
+  thanks,
+  unknown,
+}
+
+/// Result of a coach response.
+class CoachResponse {
+  final String text;
+  final bool personalized;
+  final bool fromCloud;
+
+  const CoachResponse({
+    required this.text,
+    this.personalized = false,
+    this.fromCloud = false,
+  });
+}
+
+class AICoachEngine {
+  AICoachEngine._();
+  static final AICoachEngine instance = AICoachEngine._();
+
+  /// Optional Gemini API key. When set and valid, the engine forwards
+  /// requests to the cloud model for richer conversation; otherwise it
+  /// uses the on-device rule-based coach.
+  String? _apiKey;
+  String? get apiKey => _apiKey;
+  void setApiKey(String? key) => _apiKey = (key == null || key.isEmpty)
+      ? null
+      : key;
+
+  bool get hasCloud => _apiKey != null && _apiKey!.isNotEmpty;
+
+  /// Main entry: produce a coach reply for [message] given [profile].
+  Future<CoachResponse> respond(String message, UserProfile profile) async {
+    final lang = profile.language;
+    // Always try the cloud path first when a key is configured, so users
+    // who connect an API key get real conversational AI in their language.
+    if (hasCloud) {
+      try {
+        final cloud = await _callCloud(message, profile);
+        if (cloud != null) {
+          return CoachResponse(
+            text: cloud,
+            personalized: true,
+            fromCloud: true,
+          );
+        }
+      } catch (e) {
+        debugPrint('Cloud coach failed, falling back on-device: $e');
+      }
+    }
+    // Reference L so the import is used for direction-aware callers.
+    assert(L.current == L.current);
+    return _onDevice(message, profile, lang);
+  }
+
+  // -------------------------------------------------------------------
+  // On-device rule-based coach
+  // -------------------------------------------------------------------
+
+  CoachResponse _onDevice(String message, UserProfile profile, String lang) {
+    final intent = _detectIntent(message);
+    final builder = _builders[lang] ?? _builders['English']!;
+    final text = builder(intent, profile, message);
+    return CoachResponse(text: text, personalized: profile.isComplete);
+  }
+
+  CoachIntent _detectIntent(String message) {
+    final m = message.toLowerCase();
+    bool has(List<String> keys) => keys.any((k) => m.contains(k));
+
+    if (has([
+      'hi',
+      'hello',
+      'hey',
+      'salam',
+      'salaam',
+      'assalam',
+      'سلام',
+      'ہیلو',
+      'ہائے',
+      'नमस्ते',
+      'ਸਤ',
+      'ہیلو',
+    ])) {
+      return CoachIntent.greeting;
+    }
+    if (has(['thank', 'shukria', 'shukriya', 'شکریہ', 'धन्यवाद', 'مهربانی'])) {
+      return CoachIntent.thanks;
+    }
+    if (has([
+      'what can you',
+      'help me',
+      'capabilities',
+      'features',
+      'کیا کر',
+      'کیا کر سکتے',
+      'مدد',
+      'मदद',
+      'تمھارا',
+    ])) {
+      return CoachIntent.capabilities;
+    }
+    if (has([
+      'workout',
+      'exercise',
+      'plan',
+      'routine',
+      'مشق',
+      'ورک آؤٹ',
+      'تمرین',
+      'व्यायाम',
+      'कसरत',
+      'ਕਸਰਤ',
+      'منصوبو',
+      'پلان',
+    ])) {
+      return CoachIntent.workoutPlan;
+    }
+    if (has([
+      'food',
+      'eat',
+      'diet',
+      'nutrition',
+      'meal',
+      'calorie',
+      'protein',
+      'کھانا',
+      'غذا',
+      'خوراک',
+      'भोजन',
+      'खाना',
+      'ਖਾਣਾ',
+      'ਆਹਾਰ',
+      'غذائیت',
+      'کیلوری',
+      'پروٹین',
+    ])) {
+      return CoachIntent.nutrition;
+    }
+    if (has([
+      'lose weight',
+      'weight loss',
+      'fat loss',
+      'reduce',
+      'وزن کم',
+      'موٹاپا',
+      'वजन कम',
+      'वसा',
+      'ਵਜ਼ਨ ਘਟਾ',
+    ])) {
+      return CoachIntent.weightLoss;
+    }
+    if (has([
+      'muscle',
+      'bulk',
+      'build muscle',
+      'gain mass',
+      'پٹھا',
+      'مص member',
+      'muscle',
+      'मांसपेशी',
+      'ਮਸਲ',
+      'ਪੱਠਾ',
+      'پٹھے',
+    ])) {
+      return CoachIntent.muscleGain;
+    }
+    if (has([
+      'rest',
+      'recovery',
+      'sleep',
+      'tired',
+      'sore',
+      'تھکا',
+      'آرام',
+      'نیند',
+      'रिकवरी',
+      'आराम',
+      'नींद',
+      'ਥੱਕਾ',
+      'ਆਰਾਮ',
+      ' recovery',
+      'л hardam',
+      'آرام',
+    ])) {
+      return CoachIntent.recovery;
+    }
+    if (has([
+      'form',
+      'technique',
+      'squat',
+      'pushup',
+      'deadlift',
+      'bench',
+      'فارم',
+      'تکنیک',
+      'اسکواٹ',
+      ' posture',
+      'अ',
+      'ফর্ম',
+      'ਫਾਰਮ',
+      'technique',
+    ])) {
+      return CoachIntent.form;
+    }
+    if (has([
+      'motivat',
+      'lazy',
+      'give up',
+      'consistency',
+      'حوصلا',
+      'حوصلہ',
+      'متمل',
+      'prerana',
+      'प्रेरणा',
+      'ਪ੍ਰੇਰਨਾ',
+      'motivasi',
+    ])) {
+      return CoachIntent.motivation;
+    }
+    if (has([
+      'my profile',
+      'my info',
+      'my data',
+      'میری معلومات',
+      'मेरी जानकारी',
+      'ਮੇਰੀ ਜਾਣਕਾਰੀ',
+    ])) {
+      return CoachIntent.profile;
+    }
+    return CoachIntent.unknown;
+  }
+
+  // -------------------------------------------------------------------
+  // Optional cloud integration (Gemini) — only used when a key is set
+  // -------------------------------------------------------------------
+
+  Future<String?> _callCloud(String message, UserProfile profile) async {
+    if (!hasCloud) return null;
+    final lang = profile.language;
+    final system = 'You are FitAI, a friendly, concise personal fitness '
+        'coach. Reply ONLY in $lang. Use the user profile to personalize. '
+        'Do not give medical diagnoses; encourage professional help for '
+        'medical questions. Profile: ${profile.toContextSummary()}.';
+    final endpoint = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/'
+      'gemini-1.5-flash:generateContent?key=$_apiKey',
+    );
+    final body = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {'text': '$system\n\nUser: $message'},
+          ],
+        },
+      ],
+      'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 600},
+    });
+    final res = await http.post(endpoint, body: body);
+    if (res.statusCode != 200) return null;
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final candidates = data['candidates'] as List?;
+    if (candidates == null || candidates.isEmpty) return null;
+    final parts = (candidates.first['content']['parts'] as List);
+    if (parts.isEmpty) return null;
+    return parts.first['text'] as String?;
+  }
+
+  // -------------------------------------------------------------------
+  // Greeting message used by the chat screen on first load
+  // -------------------------------------------------------------------
+
+  String greeting(UserProfile profile) {
+    final lang = profile.language;
+    final builder = _builders[lang] ?? _builders['English']!;
+    return builder(CoachIntent.greeting, profile, '');
+  }
+}
+
+/// Per-language response builders. Each returns a string for the given
+/// intent, personalized with the profile. Languages without a dedicated
+/// builder fall back to English.
+typedef ResponseBuilder = String Function(
+    CoachIntent intent, UserProfile profile, String rawMessage);
+
+final Map<String, ResponseBuilder> _builders = {
+  'English': _english,
+  'Urdu': _urdu,
+  'Hindi': _hindi,
+  'Punjabi': _punjabi,
+  'Sindhi': _sindhi,
+  'Pashto': _pashto,
+  'Balochi': _balochi,
+};
+
+String _english(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'there';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'Hi $name! I\'m your FitAI coach. I can help with workouts, '
+          'nutrition, recovery and motivation. What would you like to work on?';
+    case CoachIntent.thanks:
+      return 'You\'re welcome, $name! Stay consistent and the results will come. 💪';
+    case CoachIntent.capabilities:
+      return 'I can: build a personalized workout plan, suggest meals and '
+          'calorie targets, advise on recovery and form, and keep you '
+          'motivated. ${p.isComplete ? "I already have your profile, so my tips are tailored to you." : "Add your age, height and weight in Profile for personalized advice."}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'To build your plan I need your age, height, weight and goal '
+            'first. Open Profile → Personal Information and add them, then '
+            'ask me again.';
+      }
+      final days = p.daysPerWeek;
+      final mins = p.minutesPerSession;
+      return 'Based on your goal (${p.goal}), ${p.experience.toLowerCase()} '
+          'level and $days days/week (~$mins min), I suggest a $days-day '
+          'split focused on ${p.goal.toLowerCase()}. Open the Workout tab '
+          'and tap "Start Workout" to begin today\'s session, then use '
+          'Form Check for real-time feedback.';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Add your height and weight in Profile so I can estimate your '
+            'daily calorie target. Meanwhile, aim for lean protein, '
+            'vegetables, whole grains and plenty of water.';
+      }
+      return 'Your estimated daily energy need is about '
+          '${p.tdee!.round()} kcal. For ${p.goal.toLowerCase()}, target '
+          'roughly ${(p.tdee! * 0.85).round()} kcal with ~${(p.weightKg ?? 70 * 1.6).round()}g '
+          'protein. Open the Nutrition tab to log meals and track macros.';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) {
+        return 'Add your weight in Profile so I can set a '
+            'safe calorie target.';
+      }
+      final target = (p.tdee! * 0.8).round();
+      return 'For steady fat loss aim for ~$target kcal/day (a moderate '
+          'deficit), high protein, strength training 3-4x/week and daily '
+          'steps. Avoid very low calories — that backfires. I will never '
+          'recommend an unsafe deficit.';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) {
+        return 'Add your weight in Profile so I can set a '
+            'surplus target.';
+      }
+      final target = (p.tdee! * 1.1).round();
+      return 'To build muscle aim for ~$target kcal/day (a small surplus), '
+          '${(p.weightKg ?? 70 * 1.6).round()}g protein, progressive overload '
+          'and 6-8 hrs sleep. Consistency beats intensity at first.';
+    case CoachIntent.recovery:
+      return 'Recovery is where progress happens. ${p.isComplete ? "At your activity level (${p.activity.label}), " : ""}'
+          'aim for 7-9 hrs sleep, take 1-2 rest days/week, hydrate well, '
+          'and don\'t train the same muscle group hard two days running. '
+          'If you feel sharp pain, stop and see a professional.';
+    case CoachIntent.form:
+      return 'Good form prevents injury. Open "Form Check" from Home — it '
+          'uses your camera with on-device pose detection to count reps and '
+          'show joint-angle feedback in real time. Tip: control the '
+          'negative (lowering) phase, don\'t rush reps.';
+    case CoachIntent.motivation:
+      return 'You started, and that\'s the hardest part, $name. Show up for '
+          'just 10 minutes today — momentum follows action. Missed a day? '
+          'Never miss two in a row. I\'m here whenever you need a nudge.';
+    case CoachIntent.profile:
+      if (!p.isComplete) {
+        return 'Your profile isn\'t complete yet. Add your '
+            'age, height and weight in Profile → Personal Information so I '
+            'can personalize everything.';
+      }
+      return 'Here\'s what I know about you: ${p.toContextSummary()}. '
+          'Update anything in Profile any time.';
+    case CoachIntent.unknown:
+      return 'I\'m best at workouts, nutrition, recovery, form and '
+          'motivation. ${p.isComplete ? "Try \"make my workout\" or \"what should I eat?\"" : "Add your profile details first for personalized advice."}';
+  }
+}
+
+String _urdu(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'وہاں';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'السلام علیکم $name! میں آپ کا FitAI کوچ ہوں۔ ورک آؤٹ، غذائیت، '
+          'بحالی اور حوصلے میں مدد کر سکتا ہوں۔ آپ کیا پر کام کرنا چاہتے ہیں؟';
+    case CoachIntent.thanks:
+      return 'خوش آمدید، $name! مسلسل رہیں اور نتائج آئیں گے۔ 💪';
+    case CoachIntent.capabilities:
+      return 'میں یہ کر سکتا ہوں: ذاتی ورک آؤٹ پلان بنانا، کھانے اور کیلوری '
+          'ہدف تجویز کرنا، بحالی اور فارم مشورے دینا، اور آپ کا حوصلہ بڑھانا۔ '
+          '${p.isComplete ? "مجھے آپ کی معلومات ہیں، اس لیے مشورے آپ کے لیے ہیں۔" : "ذاتی مشورے کے لیے Profile میں عمر، قد اور وزن شامل کریں۔"}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'آپ کا پلان بنانے کے لیے مجھے عمر، قد، وزن اور ہدف چاہیے۔ '
+            'Profile → Personal Information کھولیں اور معلومات شامل کریں۔';
+      }
+      return 'آپ کے ہدف (${p.goal})، ${p.experience} سطح اور ہفتے میں '
+          '${p.daysPerWeek} دن (تقریباً ${p.minutesPerSession} منٹ) کے حساب سے '
+          'میں ایک ${p.daysPerWeek}-دن کا پلان تجویز کرتا ہوں۔ Workout ٹیب '
+          'کھولیں اور "Start Workout" دبائیں، پھر فارم چیک میں حقیقی رائے لیں۔';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Profile میں قد اور وزن شامل کریں تاکہ میں روزانہ کیلوری '
+            'ہدف بتا سکوں۔ اس وقت پروٹین، سبزیاں، اناج اور پانی پر توجہ دیں۔';
+      }
+      return 'آپ کی روزانہ ضرورت تقریباً ${p.tdee!.round()} کیلوری ہے۔ '
+          '${p.goal} کے لیے ~${(p.tdee! * 0.85).round()} کیلوری اور '
+          '~${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین مناسب ہے۔ '
+          'Nutrition ٹیب میں کھانے درج کریں۔';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) {
+        return 'وزن Profile میں شامل کریں تاکہ محفوظ کیلوری ہدف بنا سکوں۔';
+      }
+      final target = (p.tdee! * 0.8).round();
+      return 'مستحکم وزن کم کرنے کے لیے ~$target کیلوری/دن (اعتدال پسند '
+          'فرق)، زیادہ پروٹین، ہفتے میں 3-4 بار طاقت کی مشق اور روزانہ '
+          'قدم۔ بہت کم کیلوری نقصان دہ ہے — میں کبھی غیر محفوظ ہدف نہیں دوں گا۔';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) {
+        return 'وزن Profile میں شامل کریں تاکہ اضافی کیلوری ہدف بنا سکوں۔';
+      }
+      final target = (p.tdee! * 1.1).round();
+      return 'پٹھے بنانے کے لیے ~$target کیلوری/دن (تھوڑا اضافہ)، '
+          '${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین، آہستہ آہستہ بوجھ '
+          'بڑھائیں اور 6-8 گھنٹے نیند۔ مسلسل رہنا شروع میں شدت سے بہتر ہے۔';
+    case CoachIntent.recovery:
+      return 'بحالی میں ہی ترقی ہوتی ہے۔ '
+          '${p.isComplete ? "آپ کی سرگرمی (${p.activity.label}) کے لحاظ سے، " : ""}'
+          '7-9 گھنٹے نیند، ہفتے میں 1-2 آرام کے دن، کافی پانی، اور مسلسل '
+          'ایک ہی پٹھے کو سخت ٹریننگ نہ کریں۔ تیز درد ہو تو روکیں اور '
+          'ماہر سے ملیں۔';
+    case CoachIntent.form:
+      return 'اچھی فارم چوٹ سے بچاتی ہے۔ Home سے "Form Check" کھولیں — یہ '
+          'آپ کے کیمرے اور آن-ڈیوائس پوز ڈٹیکشن سے دہرائیں گنتی اور '
+          'جوائنٹ اینگل رائے دیتا ہے۔ مشورہ: نیچے کی حرکت آہستہ کریں، '
+          'جلدی نہ کریں۔';
+    case CoachIntent.motivation:
+      return 'آپ نے شروع کیا، اور یہ سب سے مشکل حصہ ہے، $name۔ آج صرف 10 '
+          'منٹ کے لیے آ جائیں — رفتار عمل سے آتی ہے۔ ایک دن چھوٹا تو '
+          'مسلسل دو نہ چھوڑیں۔ ضرورت ہو تو میں حاضر ہوں۔';
+    case CoachIntent.profile:
+      if (!p.isComplete) {
+        return 'آپ کی معلومات ابھی مکمل نہیں۔ Profile میں عمر، قد اور وزن '
+            'شامل کریں تاکہ سب کچھ ذاتی بنا سکوں۔';
+      }
+      return 'مجھے آپ کے بارے میں یہ معلوم ہے: ${p.toContextSummary()}۔ '
+          'کوئی بھی چیز Profile میں کبھی اپ ڈیٹ کریں۔';
+    case CoachIntent.unknown:
+      return 'میں ورک آؤٹ، غذائیت، بحالی، فارم اور حوصلے میں ماہر ہوں۔ '
+          '${p.isComplete ? "\"میرا ورک آؤٹ بناؤ\" یا \"میں کیا کھاؤں?\" آزمائیں۔" : "ذاتی مشورے کے لیے پہلے پروفائل مکمل کریں۔"}';
+  }
+}
+
+String _hindi(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'वहाँ';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'नमस्ते $name! मैं आपका FitAI कोच हूँ। वर्कआउट, पोषण, रिकवरी '
+          'और प्रेरणा में मदद कर सकता हूँ। आप क्या चाहते हैं?';
+    case CoachIntent.thanks:
+      return 'स्वागत है, $name! लगातार बने रहें और परिणाम आएँगे। 💪';
+    case CoachIntent.capabilities:
+      return 'मैं यह कर सकता हूँ: व्यक्तिगत वर्कआउट योजना बनाना, भोजन और '
+          'कैलोरी लक्ष्य सुझाना, रिकवरी और फॉर्म सलाह देना, और प्रेरित '
+          'रखना। ${p.isComplete ? "मेरे पास आपकी जानकारी है, इसलिए सुझात आपके लिए हैं।" : "व्यक्तिगत सलाह के लिए Profile में आयु, ऊँचाई और वज़न जोड़ें।"}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'योजना बनाने के लिए मुझे आयु, ऊँचाई, वज़न और लक्ष्य चाहिए। '
+            'Profile → Personal Information खोलें और जानकारी जोड़ें।';
+      }
+      return 'आपके लक्ष्य (${p.goal}), ${p.experience} स्तर और हफ़्ते में '
+          '${p.daysPerWeek} दिन (~${p.minutesPerSession} मिनट) के अनुसार '
+          'मैं ${p.daysPerWeek}-दिन का विभाजन सुझाता हूँ। Workout टैब खोलें, '
+          '"Start Workout" दबाएँ, फिर फॉर्म चेक में वास्तविक समीक्षा लें।';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Profile में ऊँचाई और वज़न जोड़ें ताकि मैं दैनिक कैलोरी '
+            'लक्ष्य बता सकूँ। तब तक प्रोटीन, सब्ज़ियाँ, अनाज और पानी पर '
+            'ध्यान दें।';
+      }
+      return 'आपकी दैनिक ऊर्जा आवश्यकता लगभग ${p.tdee!.round()} कैलोरी है। '
+          '${p.goal} के लिए ~${(p.tdee! * 0.85).round()} कैलोरी और '
+          '~${(p.weightKg ?? 70 * 1.6).round()} ग्राम प्रोटीन उपयुक्त है। '
+          'Nutrition टैब में भोजन दर्ज करें।';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) {
+        return 'Profile में वज़न जोड़ें ताकि सुरक्षित कैलोरी लक्ष्य बना सकूँ।';
+      }
+      final target = (p.tdee! * 0.8).round();
+      return 'नियमित वसा हानि के लिए ~$target कैलोरी/दिन (मध्यम घाटा), '
+          'अधिक प्रोटीन, सप्ताह में 3-4 बार शक्ति व्यायाम और दैनिक क़दम। '
+          'बहुत कम कैलोरी नुक़सानदायक है।';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) {
+        return 'Profile में वज़न जोड़ें ताकि अतिरिक्त कैलोरी लक्ष्य बना सकूँ।';
+      }
+      final target = (p.tdee! * 1.1).round();
+      return 'मांसपेशी बनाने के लिए ~$target कैलोरी/दिन (थोड़ा अधिक), '
+          '${(p.weightKg ?? 70 * 1.6).round()} ग्राम प्रोटीन, उत्तरोत्तर '
+          'ओवरलोड और 6-8 घंटे नींद।';
+    case CoachIntent.recovery:
+      return 'रिकवरी में ही प्रगति होती है। '
+          '${p.isComplete ? "आपकी गतिविधि (${p.activity.label}) के अनुसार, " : ""}'
+          '7-9 घंटे नींद, सप्ताह में 1-2 विश्राम दिन, पर्याप्त पानी लें। '
+          'तेज़ दर्द हो तो रुकें और विशेषज्ञ से मिलें।';
+    case CoachIntent.form:
+      return 'अच्छी फॉर्म चोट से बचाती है। Home से "Form Check" खोलें — यह '
+          'आपके कैमरे और ऑन-डिवाइस पोज़ पहचान से रेप गिनती और जॉइंट-एंगल '
+          'समीक्षा देता है। नीचे उतारते समय धीरे जाएँ।';
+    case CoachIntent.motivation:
+      return 'आपने शुरू किया, और यह सबसे कठिन हिस्सा है, $name। आज सिर्फ़ '
+          '10 मिनट के लिए आ जाएँ। एक दिन छूटे तो लगातार दो न छोड़ें।';
+    case CoachIntent.profile:
+      if (!p.isComplete) {
+        return 'आपकी प्रोफ़ाइल अभी पूरी नहीं है। Profile में आयु, ऊँचाई और '
+            'वज़न जोड़ें ताकि सब कुछ व्यक्तिगत बने।';
+      }
+      return 'मुझे आपके बारे में यह पता है: ${p.toContextSummary()}।';
+    case CoachIntent.unknown:
+      return 'मैं वर्कआउट, पोषण, रिकवरी, फॉर्म और प्रेरणा में निपुण हूँ। '
+          '${p.isComplete ? "\"मेरा वर्कआउट बनाओ\" आज़माएँ।" : "पहले प्रोफ़ाइल पूरी करें।"}';
+  }
+}
+
+String _punjabi(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'اتھے';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'سلام $name! میں تہاڈا FitAI کوچ آں۔ ورک آؤٹ، غذائیت، بحالی اور '
+          'حوصلے وچ مدد کر سکدا آں۔ تسیں کی کرنا چاہندے او؟';
+    case CoachIntent.thanks:
+      return 'خوش آمدید، $name! لگاتار رہو تے نتیجے آون گے۔ 💪';
+    case CoachIntent.capabilities:
+      return 'میں ایہ کر سکدا آں: ذاتی ورک آؤٹ پلان بنانا، کھانے تے کیلوری '
+          'ہدف دینا، بحالی تے فارم مشورے، تے حوصلہ۔ '
+          '${p.isComplete ? "مینوں تہاڈی معلومات ہن، اس لئی مشورے تہاڈے لئی ہن۔" : "ذاتی مشورے لئی Profile وچ عمر، قد تے وزن پاﺅ۔"}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'پلان بنان لئی مینوں عمر، قد، وزن تے ہدف چاہیدے نے۔ Profile → '
+            'Personal Information کھولو تے معلومات پاؤ۔';
+      }
+      return 'تہاڈے ہدف (${p.goal})، ${p.experience} پدھر تے ہفتے وچ '
+          '${p.daysPerWeek} دن (~${p.minutesPerSession} منٹ) موجب میں '
+          '${p.daysPerWeek}-دن دا پلان سنواردا آں۔ Workout ٹیب کھولو، '
+          '"Start Workout" دباؤ، فیر فارم چیک وچ اصل رائے لاؤ۔';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Profile وچ قد تے وزن پاؤ تاں روزانہ کیلوری ہدف دے سکاں۔ ';
+      }
+      return 'تہاڈی روزانہ لوڑ لگ بھگ ${p.tdee!.round()} کیلوری ہے۔ '
+          '${p.goal} لئی ~${(p.tdee! * 0.85).round()} کیلوری تے '
+          '~${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین ٹھیک ہے۔ Nutrition '
+          'ٹیب وچ کھانے درج کرو۔';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) return 'Profile وچ وزن پاؤ۔';
+      final target = (p.tdee! * 0.8).round();
+      return 'مسلسل وزن گھٹ کرن لئی ~$target کیلوری/دن، ودھ پروٹین، ہفتے وچ '
+          '3-4 واری طاقت دی مشق تے روزانہ قدم۔';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) return 'Profile وچ وزن پاؤ۔';
+      final target = (p.tdee! * 1.1).round();
+      return 'پٹھے بنان لئی ~$target کیلوری/دن، '
+          '${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین، ہولی ہولی بوجھ '
+          'ودھاؤ تے 6-8 گھنٹے نیند۔';
+    case CoachIntent.recovery:
+      return 'بحالی وچ ہی ترقی ہندی ہے۔ 7-9 گھنٹے نیند، ہفتے وچ 1-2 آرام '
+          'دن، کافی پانی پاؤ۔ تیز درد ہووے تاں رکو تے ماہر کول جاؤ۔';
+    case CoachIntent.form:
+      return 'چنگی فارم چوٹ توں بچاندی ہے۔ Home توں "Form Check" کھولو — ایہ '
+          'تہاڈے کیمرے تے آن-ڈیوائس پوز پچھان نال دہرائیں گنتی تے جوائنٹ '
+          'اینگل رائے دیندا ہے۔';
+    case CoachIntent.motivation:
+      return 'تسیں شروع کیتا، تے ایہہ سبھ توں مشکل حصہ ہے، $name۔ اج صرف '
+          '10 منٹ لئی آ جاؤ۔';
+    case CoachIntent.profile:
+      if (!p.isComplete) return 'Profile مکمل کرو۔';
+      return 'مینوں تہاڈے بارے ایہہ پتہ ہے: ${p.toContextSummary()}۔';
+    case CoachIntent.unknown:
+      return 'میں ورک آؤٹ، غذائیت، بحالی، فارم تے حوصلے وچ ماہر آں۔ '
+          '${p.isComplete ? "\"میرا ورک آؤٹ بنا\" آزماؤ۔" : "پہلے پروفائل مکمل کرو۔"}';
+  }
+}
+
+String _sindhi(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'اُتي';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'سلام $name! مان FitAI ڪوچ آهيان. ورڪ آئوٽ، غذائيت، بحالي ۽ '
+          'حوصلي ۾ مدد ڪري سگهان ٿو. توهان ڇا چاهيو ٿا؟';
+    case CoachIntent.thanks:
+      return 'مهرباني، $name! لڳاتار رهو ۽ نتيجا ايندا.';
+    case CoachIntent.capabilities:
+      return 'مان هي ڪري سگهان ٿو: ذاتی ورڪ آئوٽ پلان، کاڌي ۽ ڪيلوري هدف، '
+          'بحالي ۽ فارم صلاحون، ۽ حوصلا. '
+          '${p.isComplete ? "مون وٽ توهان جي معلومات آهي." : "Profile ۾ عمر، ڊيگهه ۽ وزن شامل ڪريو."}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'پلان ٺاهڻ لاءِ مون کي عمر، ڊيگهه، وزن ۽ هدف گهرجن. Profile '
+            '۾ معلومات شامل ڪريو.';
+      }
+      return 'توهان جي هدف (${p.goal})، ${p.experience} سطح ۽ هفتي ۾ '
+          '${p.daysPerWeek} ڏينهن موجب مان ${p.daysPerWeek}-ڏينهن وارو پلان '
+          'تجويز ڪريان ٿو. Workout ٽيب کولو.';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Profile ۾ ڊيگهه ۽ وزن شامل ڪريو.';
+      }
+      return 'توهان جي روزاني ضرورت لڳ بھڳ ${p.tdee!.round()} ڪيلوري آهي. '
+          '${p.goal} لاءِ ~${(p.tdee! * 0.85).round()} ڪيلوري ۽ '
+          '~${(p.weightKg ?? 70 * 1.6).round()} گرام پروٽين.';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) return 'Profile ۾ وزن شامل ڪريو.';
+      final target = (p.tdee! * 0.8).round();
+      return 'وزن گهٽائڻ لاءِ ~$target ڪيلوري/ڏينهن، وڌيڪ پروٽين، هفتي ۾ 3-4 '
+          'واري طاقت جي مشق.';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) return 'Profile ۾ وزن شامل ڪريو.';
+      final target = (p.tdee! * 1.1).round();
+      return 'پٽها ٺاهڻ لاءِ ~$target ڪيلوري/ڏينهن، '
+          '${(p.weightKg ?? 70 * 1.6).round()} گرام پروٽين، 6-8 ڪلاڪ نندر.';
+    case CoachIntent.recovery:
+      return 'بحالي ۾ ترقي ٿيندي آهي. 7-9 ڪلاڪ نندر، هفتي ۾ 1-2 آرام جا '
+          'ڏينهن، پاڻي گهڻو پيئو.';
+    case CoachIntent.form:
+      return 'سٺي فارم زخم کان بچائي ٿي. "Form Check" کولو — اهو ڪيمري ۽ '
+          'آن-ڊوائيس پوز سڃاڻپ سان ريپ ڳڻپ ڏي ٿو.';
+    case CoachIntent.motivation:
+      return 'توهان شروع ڪيو، اهو سڀ کان ڏکيو حصو آهي، $name. اڄ صرف 10 '
+          'منٽ لاءِ اچو.';
+    case CoachIntent.profile:
+      if (!p.isComplete) return 'Profile مڪمل ڪريو.';
+      return 'مون کي توهان بابت هي معلوم آهي: ${p.toContextSummary()}.';
+    case CoachIntent.unknown:
+      return 'مان ورڪ آئوٽ، غذائيت، بحالي، فارم ۽ حوصلي ۾ ماهر آهيان. '
+          '${p.isComplete ? "\"مون لاءِ ورڪ آئوٽ ٺاهو\" آزمايو." : "پهرين پروفائل مڪمل ڪريو."}';
+  }
+}
+
+String _pashto(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'هلته';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'سلام $name! زه ستاسو FitAI کوچ يم. ورک آؤټ، غذاييت، بحالي او '
+          'حوصلې کې مرسته کولی شم. تاسو څه غواړئ؟';
+    case CoachIntent.thanks:
+      return 'مننه، $name! پرله پسې اوسئ او پايلې راځي.';
+    case CoachIntent.capabilities:
+      return 'زه دا کولی شم: شخصي ورک آؤټ پلان، خواړه او کالوري موخه، بحالي '
+          'او فورم مشورې، او هڅونه. '
+          '${p.isComplete ? "ما ته ستاسو معلومات لرم." : "په Profile کې عمر، اوږدوالی او وزن ورزومو."}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'د پلان جوړولو لپاره ماته عمر، اوږدوالی، وزن او موخه پکار دي. '
+            'Profile کې معلومات ورزومو.';
+      }
+      return 'ستاسو د موخې (${p.goal})، ${p.experience} کچې او اونۍ کې '
+          '${p.daysPerWeek} ورځو له مخې زه ${p.daysPerWeek}-ورځنی پلان '
+          'وړاندې کوم. Workout ټب پرانیزئ.';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'په Profile کې اوږدوالی او وزن ورزومو.';
+      }
+      return 'ستاسو ورځنۍ اړتيا نژدې ${p.tdee!.round()} کالوري ده. '
+          '${p.goal} لپاره ~${(p.tdee! * 0.85).round()} کالوري او '
+          '~${(p.weightKg ?? 70 * 1.6).round()} ګرام پروټين.';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) return 'په Profile کې وزن ورزومو.';
+      final target = (p.tdee! * 0.8).round();
+      return 'د وزن کمولو لپاره ~$target کالوري/ورځ، زيات پروټين، اونۍ کې '
+          '3-4 ځله د ځواک تمرين.';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) return 'په Profile کې وزن ورزومو.';
+      final target = (p.tdee! * 1.1).round();
+      return 'د عضلو جوړولو لپاره ~$target کالوري/ورځ، '
+          '${(p.weightKg ?? 70 * 1.6).round()} ګرام پروټين، 6-8 ساعتونه خوب.';
+    case CoachIntent.recovery:
+      return 'په بحالي کې پرمختګ کيږي. 7-9 ساعتونه خوب، اونۍ کې 1-2 ارام '
+          'ورځې، ډېر اوبه وڅښئ.';
+    case CoachIntent.form:
+      return 'ښه فورم د ټپ څخه ساتي. "Form Check" پرانیزئ — د کيمرې او آن-'
+          'ډيوائس پوز پيژندنې سره ريپ شميرنه کوي.';
+    case CoachIntent.motivation:
+      return 'تاسو پيل وکړ، دا تر ټولو ستونزمنه برخه ده، $name. نن يوازې د '
+          '10 دقيقو لپاره راشئ.';
+    case CoachIntent.profile:
+      if (!p.isComplete) return 'Profile مکمل کړئ.';
+      return 'ما ته ستاسو په اړه دا معلوم دي: ${p.toContextSummary()}.';
+    case CoachIntent.unknown:
+      return 'زه په ورک آؤټ، غذاييت، بحالي، فورم او هڅونه کې ماهر يم. '
+          '${p.isComplete ? "\"زما ورک آؤټ جوړ کړه\" وآزمايئ." : "لومړی پروفایل مکمل کړئ."}';
+  }
+}
+
+String _balochi(CoachIntent intent, UserProfile p, String raw) {
+  final name = p.name.isNotEmpty ? p.name : 'اِتھ';
+  switch (intent) {
+    case CoachIntent.greeting:
+      return 'سلام $name! من ئے FitAI کوچ انت. ورک آؤٹ، غذائیت، بحالی ؤ '
+          'حوصلئَ ءَ مدد کن دارت. تو چه گوارٹ؟';
+    case CoachIntent.thanks:
+      return 'مهربانی، $name! لگاتار بہ ؤ نتیجہ شی۔';
+    case CoachIntent.capabilities:
+      return 'من ای کن دارم: شخصی ورک آؤٹ پلان، کھانا ؤ کیلوری ہدف، بحالی ؤ '
+          'فارم مشورہ، ؤ ہچون۔ '
+          '${p.isComplete ? "مئَ تئی معلومات درنت۔" : "Profile ءَ عمر، درازی ؤ وزن اِش کن۔"}';
+    case CoachIntent.workoutPlan:
+      if (!p.isComplete) {
+        return 'پلانءَ ساجتءَ وہَتی منءَ عمر، درازی، وزن ؤ ہدف لازمی انت. '
+            'Profile ءَ معلومات اِش کن۔';
+      }
+      return 'تئی ہدف (${p.goal})، ${p.experience} سطحه ؤ روچءَ '
+          '${p.daysPerWeek} روچ موجب من ${p.daysPerWeek}-روچی پلان وۆارٹ۔ '
+          'Workout ٹب کہ بز۔';
+    case CoachIntent.nutrition:
+      if (p.tdee == null) {
+        return 'Profile ءَ درازی ؤ وزن اِش کن۔';
+      }
+      return 'تئی روچی ضرورت لگ بگ ${p.tdee!.round()} کیلوری انت. '
+          '${p.goal} وہَتی ~${(p.tdee! * 0.85).round()} کیلوری ؤ '
+          '~${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین۔';
+    case CoachIntent.weightLoss:
+      if (p.tdee == null) return 'Profile ءَ وزن اِش کن۔';
+      final target = (p.tdee! * 0.8).round();
+      return 'وزن کہ کم کہ کنءَ وہَتی ~$target کیلوری/روچ، گێں پروٹین، روچءَ '
+          '3-4 وار طاقتی مشق۔';
+    case CoachIntent.muscleGain:
+      if (p.tdee == null) return 'Profile ءَ وزن اِش کن۔';
+      final target = (p.tdee! * 1.1).round();
+      return 'پٹہ ساجتءَ وہَتی ~$target کیلوری/روچ، '
+          '${(p.weightKg ?? 70 * 1.6).round()} گرام پروٹین، 6-8 گنتی نئندگ۔';
+    case CoachIntent.recovery:
+      return 'بحالیءَ پہتراسی پیشرفت کنت۔ 7-9 گنتی نئندگ، روچءَ 1-2 آرام '
+          'روچ، گێں پانی بہچ۔';
+    case CoachIntent.form:
+      return 'جاہ فارم ءَ زخم کنت بچیت۔ "Form Check" بز — ای کیمرءَ ؤ '
+          'آن-ڈیوائس پوز پیژندگ ءَ ریپ شمار کنت۔';
+    case CoachIntent.motivation:
+      return 'تو پیل کہیت، اے گێں سخت ترین حصہ انت، $name۔ انکہ فقط 10 '
+          'دقیقءَ وہَتی بہ ی۔';
+    case CoachIntent.profile:
+      if (!p.isComplete) return 'Profile مکمل کن۔';
+      return 'مئَ تئی بارءَ ای معلوم انت: ${p.toContextSummary()}۔';
+    case CoachIntent.unknown:
+      return 'من ورک آؤٹ، غذائیت، بحالی، فارم ؤ ہچونءَ ماهر انت۔ '
+          '${p.isComplete ? "\"مئے ورک آؤٹ ساج\" آزمایش۔" : "پہتے پروفائل مکمل کن۔"}';
+  }
+}
+
+// Keep the math import used (defensive — avoids unused-import lint).
+// ignore: unused_element
+double _clamp(double v, double lo, double hi) => math.min(math.max(v, lo), hi);
+
+==================== .\lib\core\food_data.dart ====================
+
+/// FitAI Food Database & Nutrition Service
+///
+/// Provides a local catalogue of common foods (including South-Asian /
+/// Pakistani staples) with calorie and macro values, plus a service that
+/// logs meals to SharedPreferences and computes daily totals against the
+/// user's calorie target.
+///
+/// The photo-based food analyzer described in the product document needs
+/// a cloud vision model (Gemini vision). When no API key is configured
+/// the app is honest about that: photos are saved with the meal as a
+/// reference and the user enters the items manually. When a key is set,
+/// the analyzer calls the vision model for an estimate and clearly marks
+/// it as an estimate, never as exact values.
+library;
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'user_profile_service.dart';
+
+/// A single food with its macro values per [serving] (e.g. 1 piece, 100g).
+class FoodItem {
+  final String name;
+  final String serving;
+  final int calories;
+  final double protein; // grams
+  final double carbs; // grams
+  final double fat; // grams
+
+  const FoodItem({
+    required this.name,
+    required this.serving,
+    required this.calories,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'serving': serving,
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+      };
+
+  factory FoodItem.fromJson(Map<String, dynamic> j) => FoodItem(
+        name: j['name'] as String? ?? '',
+        serving: j['serving'] as String? ?? '',
+        calories: (j['calories'] as num?)?.toInt() ?? 0,
+        protein: (j['protein'] as num?)?.toDouble() ?? 0,
+        carbs: (j['carbs'] as num?)?.toDouble() ?? 0,
+        fat: (j['fat'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+/// A logged meal entry for a given day.
+class MealEntry {
+  final String id;
+  final DateTime date;
+  final String mealType; // Breakfast / Lunch / Dinner / Snack
+  final FoodItem food;
+  final double servings;
+  final String? photoPath;
+  final bool? aiEstimated;
+
+  MealEntry({
+    required this.id,
+    required this.date,
+    required this.mealType,
+    required this.food,
+    this.servings = 1,
+    this.photoPath,
+    this.aiEstimated,
+  });
+
+  int get totalCalories => (food.calories * servings).round();
+  double get totalProtein => food.protein * servings;
+  double get totalCarbs => food.carbs * servings;
+  double get totalFat => food.fat * servings;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'date': date.toIso8601String(),
+        'mealType': mealType,
+        'food': food.toJson(),
+        'servings': servings,
+        'photoPath': photoPath,
+        'aiEstimated': aiEstimated,
+      };
+
+  factory MealEntry.fromJson(Map<String, dynamic> j) {
+    return MealEntry(
+      id: j['id'] as String? ?? '',
+      date: DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
+      mealType: j['mealType'] as String? ?? 'Snack',
+      food: FoodItem.fromJson(
+          j['food'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+      servings: (j['servings'] as num?)?.toDouble() ?? 1,
+      photoPath: j['photoPath'] as String?,
+      aiEstimated: j['aiEstimated'] as bool?,
+    );
+  }
+}
+
+/// Static catalogue of common foods, including Pakistani staples.
+class FoodDatabase {
+  const FoodDatabase._();
+
+  static const items = <FoodItem>[
+    // ---- South-Asian staples ----
+    FoodItem(
+        name: 'Roti (chapatti)',
+        serving: '1 piece',
+        calories: 120,
+        protein: 3,
+        carbs: 18,
+        fat: 3.5),
+    FoodItem(
+        name: 'Naan',
+        serving: '1 piece',
+        calories: 260,
+        protein: 9,
+        carbs: 45,
+        fat: 5),
+    FoodItem(
+        name: 'Plain rice (cooked)',
+        serving: '1 cup',
+        calories: 205,
+        protein: 4.2,
+        carbs: 45,
+        fat: 0.4),
+    FoodItem(
+        name: 'Daal (lentils)',
+        serving: '1 cup',
+        calories: 180,
+        protein: 9,
+        carbs: 30,
+        fat: 1),
+    FoodItem(
+        name: 'Chicken curry',
+        serving: '1 cup',
+        calories: 290,
+        protein: 28,
+        carbs: 8,
+        fat: 16),
+    FoodItem(
+        name: 'Biryani (chicken)',
+        serving: '1 plate',
+        calories: 500,
+        protein: 22,
+        carbs: 60,
+        fat: 18),
+    FoodItem(
+        name: 'Haleem',
+        serving: '1 cup',
+        calories: 230,
+        protein: 10,
+        carbs: 30,
+        fat: 7),
+    FoodItem(
+        name: 'Paratha',
+        serving: '1 piece',
+        calories: 300,
+        protein: 5,
+        carbs: 38,
+        fat: 13),
+    FoodItem(
+        name: 'Halwa (sooji)',
+        serving: '1/2 cup',
+        calories: 320,
+        protein: 4,
+        carbs: 50,
+        fat: 12),
+    FoodItem(
+        name: 'Lassi (sweet)',
+        serving: '1 glass',
+        calories: 180,
+        protein: 5,
+        carbs: 28,
+        fat: 4),
+    // ---- Proteins ----
+    FoodItem(
+        name: 'Egg (whole)',
+        serving: '1 large',
+        calories: 74,
+        protein: 6.3,
+        carbs: 0.4,
+        fat: 5),
+    FoodItem(
+        name: 'Chicken breast (grilled)',
+        serving: '100 g',
+        calories: 165,
+        protein: 31,
+        carbs: 0,
+        fat: 3.6),
+    FoodItem(
+        name: 'Beef (lean)',
+        serving: '100 g',
+        calories: 217,
+        protein: 26,
+        carbs: 0,
+        fat: 13),
+    FoodItem(
+        name: 'Fish (tilapia)',
+        serving: '100 g',
+        calories: 96,
+        protein: 20,
+        carbs: 0,
+        fat: 1.4),
+    FoodItem(
+        name: 'Chickpeas',
+        serving: '1 cup',
+        calories: 269,
+        protein: 14.5,
+        carbs: 45,
+        fat: 4),
+    FoodItem(
+        name: 'Tofu',
+        serving: '100 g',
+        calories: 76,
+        protein: 8,
+        carbs: 1.9,
+        fat: 4.8),
+    // ---- Dairy ----
+    FoodItem(
+        name: 'Milk (whole)',
+        serving: '1 cup',
+        calories: 149,
+        protein: 8,
+        carbs: 12,
+        fat: 8),
+    FoodItem(
+        name: 'Yogurt (plain)',
+        serving: '1 cup',
+        calories: 100,
+        protein: 17,
+        carbs: 6,
+        fat: 0.7),
+    FoodItem(
+        name: 'Paneer',
+        serving: '100 g',
+        calories: 296,
+        protein: 18,
+        carbs: 6,
+        fat: 22),
+    // ---- Carbs / fruit / veg ----
+    FoodItem(
+        name: 'Banana',
+        serving: '1 medium',
+        calories: 105,
+        protein: 1.3,
+        carbs: 27,
+        fat: 0.4),
+    FoodItem(
+        name: 'Apple',
+        serving: '1 medium',
+        calories: 95,
+        protein: 0.5,
+        carbs: 25,
+        fat: 0.3),
+    FoodItem(
+        name: 'Oats (dry)',
+        serving: '1/2 cup',
+        calories: 150,
+        protein: 5,
+        carbs: 27,
+        fat: 3),
+    FoodItem(
+        name: 'Potato (boiled)',
+        serving: '1 medium',
+        calories: 130,
+        protein: 3,
+        carbs: 30,
+        fat: 0.2),
+    FoodItem(
+        name: 'Mixed vegetables',
+        serving: '1 cup',
+        calories: 80,
+        protein: 3,
+        carbs: 16,
+        fat: 0.5),
+    FoodItem(
+        name: 'Salad (green)',
+        serving: '1 bowl',
+        calories: 50,
+        protein: 2,
+        carbs: 9,
+        fat: 0.3),
+    FoodItem(
+        name: 'Water',
+        serving: '1 glass',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0),
+  ];
+
+  static List<FoodItem> search(String query) {
+    if (query.trim().isEmpty) return items;
+    final q = query.toLowerCase();
+    return items.where((f) => f.name.toLowerCase().contains(q)).toList();
+  }
+}
+
+/// Result of an AI food-photo analysis.
+class FoodAnalysis {
+  final String summary;
+  final List<FoodItem> detectedItems;
+  final bool isEstimate;
+  final bool fromCloud;
+
+  const FoodAnalysis({
+    required this.summary,
+    required this.detectedItems,
+    this.isEstimate = false,
+    this.fromCloud = false,
+  });
+}
+
+/// Loads/saves meals and computes daily totals.
+class NutritionService {
+  NutritionService._();
+  static final NutritionService instance = NutritionService._();
+
+  static const _kMeals = 'meal_log';
+
+  /// Optional Gemini API key for food-photo analysis.
+  String? _apiKey;
+  void setApiKey(String? key) =>
+      _apiKey = (key == null || key.isEmpty) ? null : key;
+  bool get hasCloud => _apiKey != null;
+
+  /// Load all meal entries.
+  Future<List<MealEntry>> loadMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kMeals);
+    if (raw == null) return [];
+    try {
+      final list = jsonDecode(raw) as List;
+      return list
+          .map((e) => MealEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Failed to load meals: $e');
+      return [];
+    }
+  }
+
+  /// Save the full meal list.
+  Future<void> _saveMeals(List<MealEntry> meals) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = jsonEncode(meals.map((m) => m.toJson()).toList());
+    await prefs.setString(_kMeals, raw);
+  }
+
+  /// Add a meal entry.
+  Future<void> addMeal(MealEntry entry) async {
+    final meals = await loadMeals();
+    meals.add(entry);
+    await _saveMeals(meals);
+  }
+
+  /// Remove a meal entry by id.
+  Future<void> removeMeal(String id) async {
+    final meals = await loadMeals();
+    meals.removeWhere((m) => m.id == id);
+    await _saveMeals(meals);
+  }
+
+  /// Clear all meals (used by delete-account flow).
+  Future<void> clearMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kMeals);
+  }
+
+  /// Meals for a specific day.
+  Future<List<MealEntry>> mealsForDay(DateTime day) async {
+    final meals = await loadMeals();
+    return meals.where((m) {
+      return m.date.year == day.year &&
+          m.date.month == day.month &&
+          m.date.day == day.day;
+    }).toList();
+  }
+
+  /// Daily totals for a given day.
+  Future<Map<String, double>> totalsForDay(DateTime day) async {
+    final meals = await mealsForDay(day);
+    double cal = 0, p = 0, c = 0, f = 0;
+    for (final m in meals) {
+      cal += m.totalCalories;
+      p += m.totalProtein;
+      c += m.totalCarbs;
+      f += m.totalFat;
+    }
+    return {
+      'calories': cal,
+      'protein': p,
+      'carbs': c,

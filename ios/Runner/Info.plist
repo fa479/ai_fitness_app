@@ -76,5 +76,7 @@
 	<string>FitAI accesses your photos to analyze food images for nutrition logging.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>FitAI uses speech recognition for voice input with the AI Coach.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>FitAI uses your location to save a safe workout location in Safety Mode.</string>
 </dict>
 </plist>

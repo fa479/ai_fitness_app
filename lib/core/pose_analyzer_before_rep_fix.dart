@@ -55,12 +55,7 @@ enum ExerciseType {
   }
 }
 
-enum FormQuality {
-  good,
-  warning,
-  poor,
-  none,
-}
+enum FormQuality { good, warning, poor, none }
 
 class PoseAnalysis {
   final int reps;
@@ -82,14 +77,9 @@ class PoseAnalysis {
   });
 }
 
-double angleAt(
-  PoseLandmark a,
-  PoseLandmark b,
-  PoseLandmark c,
-) {
+double angleAt(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
   final radians =
-      math.atan2(c.y - b.y, c.x - b.x) -
-      math.atan2(a.y - b.y, a.x - b.x);
+      math.atan2(c.y - b.y, c.x - b.x) - math.atan2(a.y - b.y, a.x - b.x);
 
   var degrees = (radians * 180 / math.pi).abs();
 
@@ -100,17 +90,9 @@ double angleAt(
   return degrees;
 }
 
-enum _RepPhase {
-  up,
-  down,
-}
+enum _RepPhase { up, down }
 
-enum _SquatState {
-  waiting,
-  descending,
-  bottom,
-  rising,
-}
+enum _SquatState { waiting, descending, bottom, rising }
 
 class PoseAnalyzer {
   ExerciseType _exercise = ExerciseType.squat;
@@ -313,9 +295,7 @@ class PoseAnalyzer {
   // SQUAT
   // ================================================================
 
-  PoseAnalysis _analyzeSquat(
-    Map<PoseLandmarkType, PoseLandmark> landmarks,
-  ) {
+  PoseAnalysis _analyzeSquat(Map<PoseLandmarkType, PoseLandmark> landmarks) {
     final joint = _bestJoint(
       landmarks,
       PoseLandmarkType.leftHip,
@@ -332,11 +312,7 @@ class PoseAnalyzer {
       );
     }
 
-    final kneeAngle = angleAt(
-      joint.a,
-      joint.b,
-      joint.c,
-    );
+    final kneeAngle = angleAt(joint.a, joint.b, joint.c);
 
     // ------------------------------------------------------------
     // Standing detection
@@ -499,23 +475,13 @@ class PoseAnalyzer {
     }
 
     // Torso lean
-    final hip = _get(
-          landmarks,
-          PoseLandmarkType.leftHip,
-        ) ??
-        _get(
-          landmarks,
-          PoseLandmarkType.rightHip,
-        );
+    final hip =
+        _get(landmarks, PoseLandmarkType.leftHip) ??
+        _get(landmarks, PoseLandmarkType.rightHip);
 
-    final shoulder = _get(
-          landmarks,
-          PoseLandmarkType.leftShoulder,
-        ) ??
-        _get(
-          landmarks,
-          PoseLandmarkType.rightShoulder,
-        );
+    final shoulder =
+        _get(landmarks, PoseLandmarkType.leftShoulder) ??
+        _get(landmarks, PoseLandmarkType.rightShoulder);
 
     if (issueKey.isEmpty &&
         hip != null &&
@@ -549,9 +515,7 @@ class PoseAnalyzer {
   // PUSH-UP
   // ================================================================
 
-  PoseAnalysis _analyzePushup(
-    Map<PoseLandmarkType, PoseLandmark> landmarks,
-  ) {
+  PoseAnalysis _analyzePushup(Map<PoseLandmarkType, PoseLandmark> landmarks) {
     final joint = _bestJoint(
       landmarks,
       PoseLandmarkType.leftShoulder,
@@ -568,36 +532,19 @@ class PoseAnalyzer {
       );
     }
 
-    final elbowAngle = angleAt(
-      joint.a,
-      joint.b,
-      joint.c,
-    );
+    final elbowAngle = angleAt(joint.a, joint.b, joint.c);
 
     String issueKey = '';
     var quality = FormQuality.good;
 
-    final hip = _get(
-      landmarks,
-      PoseLandmarkType.leftHip,
-    );
+    final hip = _get(landmarks, PoseLandmarkType.leftHip);
 
-    final shoulder = _get(
-      landmarks,
-      PoseLandmarkType.leftShoulder,
-    );
+    final shoulder = _get(landmarks, PoseLandmarkType.leftShoulder);
 
-    final ankle = _get(
-      landmarks,
-      PoseLandmarkType.leftAnkle,
-    );
+    final ankle = _get(landmarks, PoseLandmarkType.leftAnkle);
 
     if (hip != null && shoulder != null && ankle != null) {
-      final bodyAngle = angleAt(
-        shoulder,
-        hip,
-        ankle,
-      );
+      final bodyAngle = angleAt(shoulder, hip, ankle);
 
       if ((bodyAngle - 180).abs() > 30) {
         issueKey = 'formBodyStraight';
@@ -607,8 +554,7 @@ class PoseAnalyzer {
 
     if (elbowAngle < 90) {
       _phase = _RepPhase.down;
-    } else if (elbowAngle > 160 &&
-        _phase == _RepPhase.down) {
+    } else if (elbowAngle > 160 && _phase == _RepPhase.down) {
       _phase = _RepPhase.up;
       _reps++;
       _checkSetCompletion();
@@ -620,9 +566,7 @@ class PoseAnalyzer {
       primaryAngle: elbowAngle,
       formQuality: quality,
       feedback: issueKey.isEmpty
-          ? (elbowAngle < 90
-              ? 'Good depth!'
-              : 'Lower for full range.')
+          ? (elbowAngle < 90 ? 'Good depth!' : 'Lower for full range.')
           : _issueKeyToEnglish(issueKey),
       bodyDetected: true,
       formIssueKey: issueKey,
@@ -652,11 +596,7 @@ class PoseAnalyzer {
       );
     }
 
-    final elbowAngle = angleAt(
-      joint.a,
-      joint.b,
-      joint.c,
-    );
+    final elbowAngle = angleAt(joint.a, joint.b, joint.c);
 
     var quality = FormQuality.good;
     String issueKey = '';
@@ -671,8 +611,7 @@ class PoseAnalyzer {
 
     if (elbowAngle < 50) {
       _phase = _RepPhase.down;
-    } else if (elbowAngle > 160 &&
-        _phase == _RepPhase.down) {
+    } else if (elbowAngle > 160 && _phase == _RepPhase.down) {
       _phase = _RepPhase.up;
       _reps++;
       _checkSetCompletion();
@@ -684,9 +623,7 @@ class PoseAnalyzer {
       primaryAngle: elbowAngle,
       formQuality: quality,
       feedback: issueKey.isEmpty
-          ? (elbowAngle < 50
-              ? 'Full curl!'
-              : 'Curl higher.')
+          ? (elbowAngle < 50 ? 'Full curl!' : 'Curl higher.')
           : _issueKeyToEnglish(issueKey),
       bodyDetected: true,
       formIssueKey: issueKey,
@@ -716,25 +653,19 @@ class PoseAnalyzer {
       );
     }
 
-    final elbowAngle = angleAt(
-      joint.a,
-      joint.b,
-      joint.c,
-    );
+    final elbowAngle = angleAt(joint.a, joint.b, joint.c);
 
     var quality = FormQuality.good;
     String issueKey = '';
 
-    if (elbowAngle > 160 &&
-        joint.c.y > joint.a.y) {
+    if (elbowAngle > 160 && joint.c.y > joint.a.y) {
       issueKey = 'formPressHigher';
       quality = FormQuality.warning;
     }
 
     if (elbowAngle < 90) {
       _phase = _RepPhase.down;
-    } else if (elbowAngle > 160 &&
-        _phase == _RepPhase.down) {
+    } else if (elbowAngle > 160 && _phase == _RepPhase.down) {
       _phase = _RepPhase.up;
       _reps++;
       _checkSetCompletion();
@@ -746,9 +677,7 @@ class PoseAnalyzer {
       primaryAngle: elbowAngle,
       formQuality: quality,
       feedback: issueKey.isEmpty
-          ? (elbowAngle > 160
-              ? 'Full press!'
-              : 'Press higher.')
+          ? (elbowAngle > 160 ? 'Full press!' : 'Press higher.')
           : _issueKeyToEnglish(issueKey),
       bodyDetected: true,
       formIssueKey: issueKey,
@@ -759,9 +688,7 @@ class PoseAnalyzer {
   // LUNGE
   // ================================================================
 
-  PoseAnalysis _analyzeLunge(
-    Map<PoseLandmarkType, PoseLandmark> landmarks,
-  ) {
+  PoseAnalysis _analyzeLunge(Map<PoseLandmarkType, PoseLandmark> landmarks) {
     final joint = _bestJoint(
       landmarks,
       PoseLandmarkType.leftHip,
@@ -778,11 +705,7 @@ class PoseAnalyzer {
       );
     }
 
-    final kneeAngle = angleAt(
-      joint.a,
-      joint.b,
-      joint.c,
-    );
+    final kneeAngle = angleAt(joint.a, joint.b, joint.c);
 
     var quality = FormQuality.good;
     String issueKey = '';
@@ -794,8 +717,7 @@ class PoseAnalyzer {
 
     if (kneeAngle < 100) {
       _phase = _RepPhase.down;
-    } else if (kneeAngle > 160 &&
-        _phase == _RepPhase.down) {
+    } else if (kneeAngle > 160 && _phase == _RepPhase.down) {
       _phase = _RepPhase.up;
       _reps++;
       _checkSetCompletion();
@@ -807,9 +729,7 @@ class PoseAnalyzer {
       primaryAngle: kneeAngle,
       formQuality: quality,
       feedback: issueKey.isEmpty
-          ? (kneeAngle < 100
-              ? 'Good depth!'
-              : 'Lower for full depth.')
+          ? (kneeAngle < 100 ? 'Good depth!' : 'Lower for full depth.')
           : _issueKeyToEnglish(issueKey),
       bodyDetected: true,
       formIssueKey: issueKey,
@@ -825,17 +745,11 @@ class PoseAnalyzer {
   ) {
     final shoulder =
         _get(landmarks, PoseLandmarkType.leftShoulder) ??
-            _get(
-              landmarks,
-              PoseLandmarkType.rightShoulder,
-            );
+        _get(landmarks, PoseLandmarkType.rightShoulder);
 
     final wrist =
         _get(landmarks, PoseLandmarkType.leftWrist) ??
-            _get(
-              landmarks,
-              PoseLandmarkType.rightWrist,
-            );
+        _get(landmarks, PoseLandmarkType.rightWrist);
 
     if (shoulder == null || wrist == null) {
       return PoseAnalysis(
@@ -861,9 +775,7 @@ class PoseAnalyzer {
       reps: _reps,
       primaryAngle: (shoulder.y - wrist.y) * 100,
       formQuality: FormQuality.good,
-      feedback: armsUp
-          ? 'Arms up — good!'
-          : 'Raise your arms higher.',
+      feedback: armsUp ? 'Arms up — good!' : 'Raise your arms higher.',
       bodyDetected: true,
     );
   }
@@ -872,21 +784,14 @@ class PoseAnalyzer {
   // PLANK
   // ================================================================
 
-  PoseAnalysis _analyzePlank(
-    Map<PoseLandmarkType, PoseLandmark> landmarks,
-  ) {
-    final hip =
-        _get(landmarks, PoseLandmarkType.leftHip);
+  PoseAnalysis _analyzePlank(Map<PoseLandmarkType, PoseLandmark> landmarks) {
+    final hip = _get(landmarks, PoseLandmarkType.leftHip);
 
-    final shoulder =
-        _get(landmarks, PoseLandmarkType.leftShoulder);
+    final shoulder = _get(landmarks, PoseLandmarkType.leftShoulder);
 
-    final ankle =
-        _get(landmarks, PoseLandmarkType.leftAnkle);
+    final ankle = _get(landmarks, PoseLandmarkType.leftAnkle);
 
-    if (hip == null ||
-        shoulder == null ||
-        ankle == null) {
+    if (hip == null || shoulder == null || ankle == null) {
       return PoseAnalysis(
         exercise: _exercise,
         reps: _reps,
@@ -895,11 +800,7 @@ class PoseAnalyzer {
       );
     }
 
-    final bodyAngle = angleAt(
-      shoulder,
-      hip,
-      ankle,
-    );
+    final bodyAngle = angleAt(shoulder, hip, ankle);
 
     final deviation = (bodyAngle - 180).abs();
 
@@ -943,9 +844,7 @@ class PoseAnalyzer {
   // GENERIC
   // ================================================================
 
-  PoseAnalysis _analyzeGeneric(
-    Map<PoseLandmarkType, PoseLandmark> landmarks,
-  ) {
+  PoseAnalysis _analyzeGeneric(Map<PoseLandmarkType, PoseLandmark> landmarks) {
     final joint = _bestJoint(
       landmarks,
       PoseLandmarkType.leftShoulder,
@@ -953,13 +852,7 @@ class PoseAnalyzer {
       PoseLandmarkType.leftWrist,
     );
 
-    final angle = joint == null
-        ? 0.0
-        : angleAt(
-            joint.a,
-            joint.b,
-            joint.c,
-          );
+    final angle = joint == null ? 0.0 : angleAt(joint.a, joint.b, joint.c);
 
     return PoseAnalysis(
       exercise: _exercise,
@@ -1006,93 +899,39 @@ class PoseAnalyzer {
 }
 
 const List<List<PoseLandmarkType>> skeletonConnections = [
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.rightShoulder,
-  ],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
 
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftEar,
-  ],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftEar],
 
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightEar,
-  ],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightEar],
 
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftElbow,
-  ],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
 
-  [
-    PoseLandmarkType.leftElbow,
-    PoseLandmarkType.leftWrist,
-  ],
+  [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
 
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightElbow,
-  ],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
 
-  [
-    PoseLandmarkType.rightElbow,
-    PoseLandmarkType.rightWrist,
-  ],
+  [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
 
-  [
-    PoseLandmarkType.leftShoulder,
-    PoseLandmarkType.leftHip,
-  ],
+  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
 
-  [
-    PoseLandmarkType.rightShoulder,
-    PoseLandmarkType.rightHip,
-  ],
+  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
 
-  [
-    PoseLandmarkType.leftHip,
-    PoseLandmarkType.rightHip,
-  ],
+  [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
 
-  [
-    PoseLandmarkType.leftHip,
-    PoseLandmarkType.leftKnee,
-  ],
+  [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
 
-  [
-    PoseLandmarkType.leftKnee,
-    PoseLandmarkType.leftAnkle,
-  ],
+  [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
 
-  [
-    PoseLandmarkType.leftAnkle,
-    PoseLandmarkType.leftHeel,
-  ],
+  [PoseLandmarkType.leftAnkle, PoseLandmarkType.leftHeel],
 
-  [
-    PoseLandmarkType.leftHeel,
-    PoseLandmarkType.leftFootIndex,
-  ],
+  [PoseLandmarkType.leftHeel, PoseLandmarkType.leftFootIndex],
 
-  [
-    PoseLandmarkType.rightHip,
-    PoseLandmarkType.rightKnee,
-  ],
+  [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
 
-  [
-    PoseLandmarkType.rightKnee,
-    PoseLandmarkType.rightAnkle,
-  ],
+  [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
 
-  [
-    PoseLandmarkType.rightAnkle,
-    PoseLandmarkType.rightHeel,
-  ],
+  [PoseLandmarkType.rightAnkle, PoseLandmarkType.rightHeel],
 
-  [
-    PoseLandmarkType.rightHeel,
-    PoseLandmarkType.rightFootIndex,
-  ],
+  [PoseLandmarkType.rightHeel, PoseLandmarkType.rightFootIndex],
 ];

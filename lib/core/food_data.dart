@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,22 +42,22 @@ class FoodItem {
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'serving': serving,
-        'calories': calories,
-        'protein': protein,
-        'carbs': carbs,
-        'fat': fat,
-      };
+    'name': name,
+    'serving': serving,
+    'calories': calories,
+    'protein': protein,
+    'carbs': carbs,
+    'fat': fat,
+  };
 
   factory FoodItem.fromJson(Map<String, dynamic> j) => FoodItem(
-        name: j['name'] as String? ?? '',
-        serving: j['serving'] as String? ?? '',
-        calories: (j['calories'] as num?)?.toInt() ?? 0,
-        protein: (j['protein'] as num?)?.toDouble() ?? 0,
-        carbs: (j['carbs'] as num?)?.toDouble() ?? 0,
-        fat: (j['fat'] as num?)?.toDouble() ?? 0,
-      );
+    name: j['name'] as String? ?? '',
+    serving: j['serving'] as String? ?? '',
+    calories: (j['calories'] as num?)?.toInt() ?? 0,
+    protein: (j['protein'] as num?)?.toDouble() ?? 0,
+    carbs: (j['carbs'] as num?)?.toDouble() ?? 0,
+    fat: (j['fat'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// A logged meal entry for a given day.
@@ -85,14 +86,14 @@ class MealEntry {
   double get totalFat => food.fat * servings;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'date': date.toIso8601String(),
-        'mealType': mealType,
-        'food': food.toJson(),
-        'servings': servings,
-        'photoPath': photoPath,
-        'aiEstimated': aiEstimated,
-      };
+    'id': id,
+    'date': date.toIso8601String(),
+    'mealType': mealType,
+    'food': food.toJson(),
+    'servings': servings,
+    'photoPath': photoPath,
+    'aiEstimated': aiEstimated,
+  };
 
   factory MealEntry.fromJson(Map<String, dynamic> j) {
     return MealEntry(
@@ -100,7 +101,8 @@ class MealEntry {
       date: DateTime.tryParse(j['date'] as String? ?? '') ?? DateTime.now(),
       mealType: j['mealType'] as String? ?? 'Snack',
       food: FoodItem.fromJson(
-          j['food'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+        j['food'] as Map<String, dynamic>? ?? <String, dynamic>{},
+      ),
       servings: (j['servings'] as num?)?.toDouble() ?? 1,
       photoPath: j['photoPath'] as String?,
       aiEstimated: j['aiEstimated'] as bool?,
@@ -115,190 +117,216 @@ class FoodDatabase {
   static const items = <FoodItem>[
     // ---- South-Asian staples ----
     FoodItem(
-        name: 'Roti (chapatti)',
-        serving: '1 piece',
-        calories: 120,
-        protein: 3,
-        carbs: 18,
-        fat: 3.5),
+      name: 'Roti (chapatti)',
+      serving: '1 piece',
+      calories: 120,
+      protein: 3,
+      carbs: 18,
+      fat: 3.5,
+    ),
     FoodItem(
-        name: 'Naan',
-        serving: '1 piece',
-        calories: 260,
-        protein: 9,
-        carbs: 45,
-        fat: 5),
+      name: 'Naan',
+      serving: '1 piece',
+      calories: 260,
+      protein: 9,
+      carbs: 45,
+      fat: 5,
+    ),
     FoodItem(
-        name: 'Plain rice (cooked)',
-        serving: '1 cup',
-        calories: 205,
-        protein: 4.2,
-        carbs: 45,
-        fat: 0.4),
+      name: 'Plain rice (cooked)',
+      serving: '1 cup',
+      calories: 205,
+      protein: 4.2,
+      carbs: 45,
+      fat: 0.4,
+    ),
     FoodItem(
-        name: 'Daal (lentils)',
-        serving: '1 cup',
-        calories: 180,
-        protein: 9,
-        carbs: 30,
-        fat: 1),
+      name: 'Daal (lentils)',
+      serving: '1 cup',
+      calories: 180,
+      protein: 9,
+      carbs: 30,
+      fat: 1,
+    ),
     FoodItem(
-        name: 'Chicken curry',
-        serving: '1 cup',
-        calories: 290,
-        protein: 28,
-        carbs: 8,
-        fat: 16),
+      name: 'Chicken curry',
+      serving: '1 cup',
+      calories: 290,
+      protein: 28,
+      carbs: 8,
+      fat: 16,
+    ),
     FoodItem(
-        name: 'Biryani (chicken)',
-        serving: '1 plate',
-        calories: 500,
-        protein: 22,
-        carbs: 60,
-        fat: 18),
+      name: 'Biryani (chicken)',
+      serving: '1 plate',
+      calories: 500,
+      protein: 22,
+      carbs: 60,
+      fat: 18,
+    ),
     FoodItem(
-        name: 'Haleem',
-        serving: '1 cup',
-        calories: 230,
-        protein: 10,
-        carbs: 30,
-        fat: 7),
+      name: 'Haleem',
+      serving: '1 cup',
+      calories: 230,
+      protein: 10,
+      carbs: 30,
+      fat: 7,
+    ),
     FoodItem(
-        name: 'Paratha',
-        serving: '1 piece',
-        calories: 300,
-        protein: 5,
-        carbs: 38,
-        fat: 13),
+      name: 'Paratha',
+      serving: '1 piece',
+      calories: 300,
+      protein: 5,
+      carbs: 38,
+      fat: 13,
+    ),
     FoodItem(
-        name: 'Halwa (sooji)',
-        serving: '1/2 cup',
-        calories: 320,
-        protein: 4,
-        carbs: 50,
-        fat: 12),
+      name: 'Halwa (sooji)',
+      serving: '1/2 cup',
+      calories: 320,
+      protein: 4,
+      carbs: 50,
+      fat: 12,
+    ),
     FoodItem(
-        name: 'Lassi (sweet)',
-        serving: '1 glass',
-        calories: 180,
-        protein: 5,
-        carbs: 28,
-        fat: 4),
+      name: 'Lassi (sweet)',
+      serving: '1 glass',
+      calories: 180,
+      protein: 5,
+      carbs: 28,
+      fat: 4,
+    ),
     // ---- Proteins ----
     FoodItem(
-        name: 'Egg (whole)',
-        serving: '1 large',
-        calories: 74,
-        protein: 6.3,
-        carbs: 0.4,
-        fat: 5),
+      name: 'Egg (whole)',
+      serving: '1 large',
+      calories: 74,
+      protein: 6.3,
+      carbs: 0.4,
+      fat: 5,
+    ),
     FoodItem(
-        name: 'Chicken breast (grilled)',
-        serving: '100 g',
-        calories: 165,
-        protein: 31,
-        carbs: 0,
-        fat: 3.6),
+      name: 'Chicken breast (grilled)',
+      serving: '100 g',
+      calories: 165,
+      protein: 31,
+      carbs: 0,
+      fat: 3.6,
+    ),
     FoodItem(
-        name: 'Beef (lean)',
-        serving: '100 g',
-        calories: 217,
-        protein: 26,
-        carbs: 0,
-        fat: 13),
+      name: 'Beef (lean)',
+      serving: '100 g',
+      calories: 217,
+      protein: 26,
+      carbs: 0,
+      fat: 13,
+    ),
     FoodItem(
-        name: 'Fish (tilapia)',
-        serving: '100 g',
-        calories: 96,
-        protein: 20,
-        carbs: 0,
-        fat: 1.4),
+      name: 'Fish (tilapia)',
+      serving: '100 g',
+      calories: 96,
+      protein: 20,
+      carbs: 0,
+      fat: 1.4,
+    ),
     FoodItem(
-        name: 'Chickpeas',
-        serving: '1 cup',
-        calories: 269,
-        protein: 14.5,
-        carbs: 45,
-        fat: 4),
+      name: 'Chickpeas',
+      serving: '1 cup',
+      calories: 269,
+      protein: 14.5,
+      carbs: 45,
+      fat: 4,
+    ),
     FoodItem(
-        name: 'Tofu',
-        serving: '100 g',
-        calories: 76,
-        protein: 8,
-        carbs: 1.9,
-        fat: 4.8),
+      name: 'Tofu',
+      serving: '100 g',
+      calories: 76,
+      protein: 8,
+      carbs: 1.9,
+      fat: 4.8,
+    ),
     // ---- Dairy ----
     FoodItem(
-        name: 'Milk (whole)',
-        serving: '1 cup',
-        calories: 149,
-        protein: 8,
-        carbs: 12,
-        fat: 8),
+      name: 'Milk (whole)',
+      serving: '1 cup',
+      calories: 149,
+      protein: 8,
+      carbs: 12,
+      fat: 8,
+    ),
     FoodItem(
-        name: 'Yogurt (plain)',
-        serving: '1 cup',
-        calories: 100,
-        protein: 17,
-        carbs: 6,
-        fat: 0.7),
+      name: 'Yogurt (plain)',
+      serving: '1 cup',
+      calories: 100,
+      protein: 17,
+      carbs: 6,
+      fat: 0.7,
+    ),
     FoodItem(
-        name: 'Paneer',
-        serving: '100 g',
-        calories: 296,
-        protein: 18,
-        carbs: 6,
-        fat: 22),
+      name: 'Paneer',
+      serving: '100 g',
+      calories: 296,
+      protein: 18,
+      carbs: 6,
+      fat: 22,
+    ),
     // ---- Carbs / fruit / veg ----
     FoodItem(
-        name: 'Banana',
-        serving: '1 medium',
-        calories: 105,
-        protein: 1.3,
-        carbs: 27,
-        fat: 0.4),
+      name: 'Banana',
+      serving: '1 medium',
+      calories: 105,
+      protein: 1.3,
+      carbs: 27,
+      fat: 0.4,
+    ),
     FoodItem(
-        name: 'Apple',
-        serving: '1 medium',
-        calories: 95,
-        protein: 0.5,
-        carbs: 25,
-        fat: 0.3),
+      name: 'Apple',
+      serving: '1 medium',
+      calories: 95,
+      protein: 0.5,
+      carbs: 25,
+      fat: 0.3,
+    ),
     FoodItem(
-        name: 'Oats (dry)',
-        serving: '1/2 cup',
-        calories: 150,
-        protein: 5,
-        carbs: 27,
-        fat: 3),
+      name: 'Oats (dry)',
+      serving: '1/2 cup',
+      calories: 150,
+      protein: 5,
+      carbs: 27,
+      fat: 3,
+    ),
     FoodItem(
-        name: 'Potato (boiled)',
-        serving: '1 medium',
-        calories: 130,
-        protein: 3,
-        carbs: 30,
-        fat: 0.2),
+      name: 'Potato (boiled)',
+      serving: '1 medium',
+      calories: 130,
+      protein: 3,
+      carbs: 30,
+      fat: 0.2,
+    ),
     FoodItem(
-        name: 'Mixed vegetables',
-        serving: '1 cup',
-        calories: 80,
-        protein: 3,
-        carbs: 16,
-        fat: 0.5),
+      name: 'Mixed vegetables',
+      serving: '1 cup',
+      calories: 80,
+      protein: 3,
+      carbs: 16,
+      fat: 0.5,
+    ),
     FoodItem(
-        name: 'Salad (green)',
-        serving: '1 bowl',
-        calories: 50,
-        protein: 2,
-        carbs: 9,
-        fat: 0.3),
+      name: 'Salad (green)',
+      serving: '1 bowl',
+      calories: 50,
+      protein: 2,
+      carbs: 9,
+      fat: 0.3,
+    ),
     FoodItem(
-        name: 'Water',
-        serving: '1 glass',
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0),
+      name: 'Water',
+      serving: '1 glass',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+    ),
   ];
 
   static List<FoodItem> search(String query) {
@@ -382,10 +410,16 @@ class NutritionService {
       _customCalorieTarget = null;
       await prefs.remove(_kCustomCalorieTarget);
     }
-    if (protein != null && carbs != null && fat != null) {
-      _customMacroTargets = {'protein': protein, 'carbs': carbs, 'fat': fat};
+    if (protein != null || carbs != null || fat != null) {
+      _customMacroTargets = {
+        'protein': protein ?? 0,
+        'carbs': carbs ?? 0,
+        'fat': fat ?? 0,
+      };
       await prefs.setString(
-          _kCustomMacroTargets, jsonEncode(_customMacroTargets));
+        _kCustomMacroTargets,
+        jsonEncode(_customMacroTargets),
+      );
     } else {
       _customMacroTargets = null;
       await prefs.remove(_kCustomMacroTargets);
@@ -455,12 +489,7 @@ class NutritionService {
       c += m.totalCarbs;
       f += m.totalFat;
     }
-    return {
-      'calories': cal,
-      'protein': p,
-      'carbs': c,
-      'fat': f,
-    };
+    return {'calories': cal, 'protein': p, 'carbs': c, 'fat': f};
   }
 
   /// Recommended daily calorie target from a profile.
@@ -506,92 +535,52 @@ class NutritionService {
     };
   }
 
-  /// Analyze a food photo. When no API key is configured, returns an honest
-  /// message telling the user to log items manually. When a key is set,
-  /// asks the vision model and marks results as estimates.
+  /// Analyze a food photo using on-device ML Kit image labeling.
+  /// Matches detected labels against the local FoodDatabase.
   Future<FoodAnalysis> analyzePhoto(File image) async {
-    if (!hasCloud) {
+    final labeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
+    try {
+      final inputImage = InputImage.fromFile(image);
+      final labels = await labeler.processImage(inputImage);
+
+      if (labels.isEmpty) {
+        return const FoodAnalysis(
+          summary: 'No items recognized in the photo. Try again with better lighting.',
+          detectedItems: [],
+          isEstimate: true,
+          fromCloud: false,
+        );
+      }
+
+      final detected = <FoodItem>[];
+      final labelNames = <String>[];
+
+      for (final label in labels) {
+        labelNames.add('${label.label} (${(label.confidence * 100).toStringAsFixed(0)}%)');
+        final matches = FoodDatabase.search(label.label);
+        for (final match in matches) {
+          if (!detected.any((f) => f.name == match.name)) {
+            detected.add(match);
+          }
+        }
+      }
+
+      return FoodAnalysis(
+        summary: 'Detected: ${labelNames.join(", ")}',
+        detectedItems: detected,
+        isEstimate: true,
+        fromCloud: false,
+      );
+    } catch (e) {
+      debugPrint('Food photo analysis failed: $e');
       return const FoodAnalysis(
-        summary:
-            'AI food photo analysis is not connected. Add a Gemini API key '
-            'in Settings to enable photo recognition. For now, please pick '
-            'the food items from the list and enter the serving size.',
+        summary: 'Photo analysis failed. Please log items manually.',
         detectedItems: [],
         isEstimate: false,
         fromCloud: false,
       );
-    }
-    try {
-      final bytes = await image.readAsBytes();
-      final b64 = base64Encode(bytes);
-      final endpoint = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/'
-        'gemini-1.5-flash:generateContent?key=$_apiKey',
-      );
-      final body = jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {
-                'text': 'Identify the food items in this image. Reply ONLY '
-                    'with a JSON array of objects with keys name, serving, '
-                    'calories, protein, carbs, fat (numbers). These are '
-                    'estimates.'
-              },
-              {
-                'inlineData': {'mimeType': 'image/jpeg', 'data': b64}
-              }
-            ],
-          },
-        ],
-      });
-      final res = await http.post(endpoint, body: body);
-      if (res.statusCode != 200) {
-        return const FoodAnalysis(
-          summary: 'Could not analyze the photo right now. Please log the '
-              'items manually.',
-          detectedItems: [],
-          isEstimate: false,
-        );
-      }
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final candidates = data['candidates'] as List?;
-      if (candidates == null || candidates.isEmpty) {
-        return const FoodAnalysis(
-          summary: 'No food recognized. Please log items manually.',
-          detectedItems: [],
-        );
-      }
-      final text = (candidates.first['content']['parts'] as List).first['text']
-          as String;
-      // Extract the JSON array from the response.
-      final start = text.indexOf('[');
-      final end = text.lastIndexOf(']');
-      if (start == -1 || end == -1) {
-        return FoodAnalysis(
-          summary: text.trim(),
-          detectedItems: [],
-          isEstimate: true,
-          fromCloud: true,
-        );
-      }
-      final jsonText = text.substring(start, end + 1);
-      final arr = jsonDecode(jsonText) as List;
-      final detected = arr
-          .map((e) => FoodItem.fromJson(e as Map<String, dynamic>))
-          .toList();
-      return FoodAnalysis(
-        summary: 'Estimated items (AI vision — values are approximate):',
-        detectedItems: detected,
-        isEstimate: true,
-        fromCloud: true,
-      );
-    } catch (e) {
-      debugPrint('Food analysis failed: $e');
-      return const FoodAnalysis(
-        summary: 'Photo analysis failed. Please log items manually.',
-        detectedItems: [],
-      );
+    } finally {
+      labeler.close();
     }
   }
 }

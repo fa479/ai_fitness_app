@@ -1,4 +1,4 @@
-﻿import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 
 // FitAI feature modules
 import 'app/app_localizations.dart';
@@ -90,10 +91,7 @@ class _AIFitnessAppState extends State<AIFitnessApp> {
       title: 'AI Fitness',
       locale: Locale(L.current),
       builder: (context, child) {
-        return Directionality(
-          textDirection: L.textDirection,
-          child: child!,
-        );
+        return Directionality(textDirection: L.textDirection, child: child!);
       },
 
       themeMode: themeMode,
@@ -146,17 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FormCheckScreen(
-          targetSets: 3,
-          targetRepsPerSet: 10,
-          // FormCheck exercise completion is NOT a full workout.
-          // Only ActiveWorkoutScreen records full workout progress.
-          onExerciseCompleted: (completedSets, totalReps) {
-            // Exercise-only completion — no progress recorded.
-            // This callback is kept for potential future exercise tracking
-            // but does NOT count as a full workout.
-          },
-        ),
+        builder: (context) => const FormCheckScreen(),
       ),
     );
   }
@@ -303,6 +291,22 @@ class HomeContent extends StatelessWidget {
               );
             },
           ),
+
+          const SizedBox(height: 12),
+
+          _FeatureCard(
+            icon: Icons.male_outlined,
+            title: L.t('mensWellness'),
+            subtitle: L.t('mensWellnessSubtitle'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MensWellnessScreen(),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 28),
 
           Text(
@@ -347,9 +351,7 @@ class HomeContent extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const GymMusicScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const GymMusicScreen()),
               );
             },
           ),
@@ -423,8 +425,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
   final List<Map<String, String>> _messages = [
     {
       'sender': 'AI',
-      'message':
-          'Hi! 👋 I\'m your AI Fitness Coach. How can I help you today?',
+      'message': 'Hi! 👋 I\'m your AI Fitness Coach. How can I help you today?',
     },
   ];
 
@@ -565,7 +566,10 @@ class WomensWellnessScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     L.t('yourWellnessYourWay'),
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -670,6 +674,34 @@ class WomensWellnessScreen extends StatelessWidget {
             ),
 
             _WellnessFeatureTile(
+              icon: Icons.psychology_outlined,
+              title: L.t('womensStressMental'),
+              subtitle: L.t('womensStressMentalSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WomensStressMentalScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.favorite_outlined,
+              title: L.t('womensHeartHealth'),
+              subtitle: L.t('womensHeartHealthSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WomensHeartHealthScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
               icon: Icons.health_and_safety_outlined,
               title: L.t('safetyMode'),
               subtitle: L.t('safetyModeSubtitle'),
@@ -678,6 +710,197 @@ class WomensWellnessScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const WomensSafetyModeScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MensWellnessScreen extends StatelessWidget {
+  const MensWellnessScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensWellness'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.male_outlined, size: 34),
+                  const SizedBox(height: 12),
+                  Text(
+                    L.t('yourMensWellnessYourWay'),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    L.t('mensWellnessDetail'),
+                    style: TextStyle(fontSize: 14, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            Text(
+              L.t('mensWellness'),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 15),
+
+            _WellnessFeatureTile(
+              icon: Icons.restaurant_menu_outlined,
+              title: L.t('mensNutrition'),
+              subtitle: L.t('mensNutritionSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensNutritionScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.fitness_center_outlined,
+              title: L.t('mensFitness'),
+              subtitle: L.t('mensFitnessSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensFitnessScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.wb_sunny_outlined,
+              title: L.t('mensHormonalWellness'),
+              subtitle: L.t('mensHormonalWellnessSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensHormonalWellnessScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.monitor_heart_outlined,
+              title: L.t('mensHeartHealth'),
+              subtitle: L.t('mensHeartHealthSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensHeartHealthScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.psychology_outlined,
+              title: L.t('mensStressMental'),
+              subtitle: L.t('mensStressMentalSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensStressMentalScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.self_improvement_outlined,
+              title: L.t('mensRecovery'),
+              subtitle: L.t('mensRecoverySubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensRecoveryScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.bedtime_outlined,
+              title: L.t('mensSleepEnergy'),
+              subtitle: L.t('mensSleepEnergySubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensSleepEnergyScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.medical_services_outlined,
+              title: L.t('mensPreventiveHealth'),
+              subtitle: L.t('mensPreventiveHealthSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensPreventiveHealthScreen(),
+                  ),
+                );
+              },
+            ),
+
+            _WellnessFeatureTile(
+              icon: Icons.health_and_safety_outlined,
+              title: L.t('mensSafetyMode'),
+              subtitle: L.t('mensSafetyModeSubtitle'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MensSafetyModeScreen(),
                   ),
                 );
               },
@@ -1025,8 +1248,8 @@ class _MealPersonalizer {
     final goalLower = profile.goal.toLowerCase();
     final isStrengthGoal =
         goalLower.contains('strength') || goalLower.contains('muscle');
-    final isWeightMgmt = goalLower.contains('weight') ||
-        goalLower.contains('management');
+    final isWeightMgmt =
+        goalLower.contains('weight') || goalLower.contains('management');
 
     // Protein calorie share from goal
     final double proteinCalShare;
@@ -1075,8 +1298,12 @@ class _MealPersonalizer {
     // Approximate grams of common protein-rich food to supply proteinG:
     // lean meat/fish ~20g protein per 100g, eggs/paneer ~15g per 100g
     final foodG = (proteinG * 5).round(); // ~5x protein grams in food weight
-    if (foodG <= 50) return 'About ${foodG}g protein-rich food (such as eggs, paneer or daal)';
-    if (foodG <= 100) return 'About ${foodG}g protein-rich food (such as chicken, fish, eggs or paneer)';
+    if (foodG <= 50) {
+      return 'About ${foodG}g protein-rich food (such as eggs, paneer or daal)';
+    }
+    if (foodG <= 100) {
+      return 'About ${foodG}g protein-rich food (such as chicken, fish, eggs or paneer)';
+    }
     return 'About ${foodG}g protein-rich food (such as chicken, fish, eggs, paneer or lean meat)';
   }
 
@@ -1092,9 +1319,15 @@ class _MealPersonalizer {
     }
     // Cooked grains/rice ~25g carbs per 100g
     final cookedG = (carbG * 4).round();
-    if (cookedG <= 75) return 'a modest portion of cooked grains or starches (such as roti, rice or oats)';
-    if (cookedG <= 150) return 'a moderate portion of cooked grains or starches (such as roti, rice or oats)';
-    if (cookedG <= 250) return 'a substantial portion of cooked grains or starches (such as roti, rice or oats)';
+    if (cookedG <= 75) {
+      return 'a modest portion of cooked grains or starches (such as roti, rice or oats)';
+    }
+    if (cookedG <= 150) {
+      return 'a moderate portion of cooked grains or starches (such as roti, rice or oats)';
+    }
+    if (cookedG <= 250) {
+      return 'a substantial portion of cooked grains or starches (such as roti, rice or oats)';
+    }
     return 'a large portion of cooked grains or starches (such as roti, rice or oats)';
   }
 
@@ -1392,8 +1625,7 @@ class _MealPersonalizer {
     final minutesPerSession = int.tryParse(profile.minutesPerSession) ?? 45;
 
     final base = activity.factor >= 1.55 ? 8 : 5;
-    final add = (activity.factor >= 1.725 ||
-            experience.contains('advanced'))
+    final add = (activity.factor >= 1.725 || experience.contains('advanced'))
         ? 5
         : 0;
     // Longer sessions suggest more mobility warm-up time
@@ -1411,15 +1643,35 @@ class _MealPersonalizer {
   String personalizedRecoveryGuidance() {
     final daysPerWeek = int.tryParse(profile.daysPerWeek) ?? 3;
     final experience = profile.experience.toLowerCase();
-    final age = profile.ageInt;
+    final ageGroup = profile.ageGroup;
+    final hasHighRisk = profile.hasHighRiskCondition;
+    final hasJointMobility = profile.healthConditions
+        .contains(HealthCondition.jointMobility);
+
+    if (ageGroup.isMinor) {
+      return 'Young athletes need extra recovery time. Ensure playful rest days '
+          'and parental guidance on training frequency. Focus on fun over intensity.';
+    }
+
+    if (hasHighRisk) {
+      return 'Given your health conditions, follow your healthcare professional\'s '
+          'advice on rest and recovery. Balance activity days with gentle movement '
+          'and allow extra recovery time as needed.';
+    }
+
+    if (hasJointMobility) {
+      return 'Include gentle stretching and low-impact recovery activities. '
+          'Avoid straining joints on rest days — try walking or light mobility work.';
+    }
+
+    if (ageGroup == AgeGroup.older) {
+      return 'Allow longer recovery between sessions. Gentle stretching, walking, '
+          'and extra rest days help maintain consistency without overloading.';
+    }
 
     if (daysPerWeek >= 5) {
       return 'Include at least 1\u20132 lighter days per week for recovery.';
     } else if (daysPerWeek >= 3) {
-      if (age != null && age >= 55) {
-        return 'Balance activity days with rest or gentle movement days. '
-            'Allow extra recovery time as needed.';
-      }
       if (experience.contains('beginner')) {
         return 'Balance activity days with rest or gentle movement days. '
             'Progress gradually and allow recovery between sessions.';
@@ -1585,8 +1837,11 @@ class _MealDetailCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.restaurant_outlined, size: 20,
-                    color: colorScheme.primary),
+                Icon(
+                  Icons.restaurant_outlined,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1642,14 +1897,19 @@ class _MealDetailCard extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle_outline, size: 15,
-                                color: colorScheme.primary),
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 15,
+                              color: colorScheme.primary,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 food,
                                 style: const TextStyle(
-                                    fontSize: 14, height: 1.4),
+                                  fontSize: 14,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
                           ],
@@ -1712,10 +1972,7 @@ class _MealDetailCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: child,
-        ),
+        Padding(padding: const EdgeInsets.only(left: 4), child: child),
       ],
     );
   }
@@ -1801,9 +2058,38 @@ class _ExerciseVideoCard extends StatelessWidget {
                     final uri = Uri.parse(
                       'https://www.youtube.com/results?search_query=$query',
                     );
-                    await launchUrl(
-                      uri,
-                      mode: LaunchMode.externalApplication,
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Open camera mirror',
+                  icon: Icon(
+                    Icons.camera_alt_outlined,
+                    size: 24,
+                    color: colorScheme.tertiary,
+                  ),
+                  onPressed: () {
+                    final libExercise =
+                        ExerciseLibrary.findCameraExercise(exerciseName);
+                    final type = libExercise?.poseExerciseType;
+                    ExerciseType? exerciseType;
+                    if (type != null) {
+                      for (final t in ExerciseType.values) {
+                        if (t.name == type) {
+                          exerciseType = t;
+                          break;
+                        }
+                      }
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            FormCheckScreen(
+                              initialExercise: exerciseType ?? ExerciseType.generic,
+                              exerciseName: exerciseName,
+                            ),
+                      ),
                     );
                   },
                 ),
@@ -2020,10 +2306,7 @@ class _CycleAwareNutritionScreenState extends State<CycleAwareNutritionScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Yogurt and fruit',
-                'Roasted chana',
-              ],
+              baseFoodOptions: ['Yogurt and fruit', 'Roasted chana'],
               context: 'follicular phase',
             ),
           ),
@@ -2060,9 +2343,7 @@ class _CycleAwareNutritionScreenState extends State<CycleAwareNutritionScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Breakfast',
-              baseFoodOptions: [
-                'Eggs, whole-grain toast, yogurt and fruit',
-              ],
+              baseFoodOptions: ['Eggs, whole-grain toast, yogurt and fruit'],
               context: 'ovulatory phase',
             ),
           ),
@@ -2081,10 +2362,7 @@ class _CycleAwareNutritionScreenState extends State<CycleAwareNutritionScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Fruit with nuts',
-                'Yogurt',
-              ],
+              baseFoodOptions: ['Fruit with nuts', 'Yogurt'],
               context: 'ovulatory phase',
             ),
           ),
@@ -2144,10 +2422,7 @@ class _CycleAwareNutritionScreenState extends State<CycleAwareNutritionScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Yogurt and fruit',
-                'Roasted chana',
-              ],
+              baseFoodOptions: ['Yogurt and fruit', 'Roasted chana'],
               context: 'luteal phase',
             ),
           ),
@@ -2428,10 +2703,7 @@ class _PcosSupportScreenState extends State<PcosSupportScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Yogurt + fruit',
-                'Roasted chana + fruit',
-              ],
+              baseFoodOptions: ['Yogurt + fruit', 'Roasted chana + fruit'],
               context: 'PCOS support',
             ),
           ),
@@ -2641,10 +2913,7 @@ class _PregnancyScreenState extends State<PregnancyScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Yogurt + fruit',
-                'Roasted chana + fruit',
-              ],
+              baseFoodOptions: ['Yogurt + fruit', 'Roasted chana + fruit'],
               context: 'pregnancy',
               restrictCalorieDisplay: true,
             ),
@@ -2961,10 +3230,7 @@ class _HormonalWellnessScreenState extends State<HormonalWellnessScreen> {
           _MealDetailCard(
             meal: personalizer.generate(
               mealName: 'Snack',
-              baseFoodOptions: [
-                'Yogurt + fruit',
-                'Roasted chana',
-              ],
+              baseFoodOptions: ['Yogurt + fruit', 'Roasted chana'],
               context: 'hormonal wellness',
             ),
           ),
@@ -3040,6 +3306,157 @@ class _WomensSafetyModeScreenState extends State<WomensSafetyModeScreen> {
   bool awarenessReminder = true;
   bool lowDistraction = false;
 
+  String? _savedLocation;
+  double? _savedLat;
+  double? _savedLng;
+  String _trustedContactName = '';
+  String _trustedContactPhone = '';
+  bool _savingLocation = false;
+
+  final _contactNameController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData();
+  }
+
+  @override
+  void dispose() {
+    _contactNameController.dispose();
+    _contactPhoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _savedLocation = prefs.getString('safety_location');
+      _savedLat = prefs.getDouble('safety_lat');
+      _savedLng = prefs.getDouble('safety_lng');
+      _trustedContactName = prefs.getString('safety_contact_name') ?? '';
+      _trustedContactPhone = prefs.getString('safety_contact_phone') ?? '';
+      _contactNameController.text = _trustedContactName;
+      _contactPhoneController.text = _trustedContactPhone;
+    });
+  }
+
+  Future<void> _saveCurrentLocation() async {
+    setState(() => _savingLocation = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled.')),
+        );
+        setState(() => _savingLocation = false);
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission denied.')),
+          );
+          setState(() => _savingLocation = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission permanently denied.')),
+        );
+        setState(() => _savingLocation = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final locationStr =
+          '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('safety_location', locationStr);
+      await prefs.setDouble('safety_lat', position.latitude);
+      await prefs.setDouble('safety_lng', position.longitude);
+
+      setState(() {
+        _savedLocation = locationStr;
+        _savedLat = position.latitude;
+        _savedLng = position.longitude;
+        _savingLocation = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location saved successfully.')),
+      );
+    } catch (e) {
+      setState(() => _savingLocation = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to get location: $e')),
+      );
+    }
+  }
+
+  Future<void> _clearSavedLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('safety_location');
+    await prefs.remove('safety_lat');
+    await prefs.remove('safety_lng');
+    setState(() {
+      _savedLocation = null;
+      _savedLat = null;
+      _savedLng = null;
+    });
+  }
+
+  Future<void> _saveTrustedContact() async {
+    final name = _contactNameController.text.trim();
+    final phone = _contactPhoneController.text.trim();
+
+    if (name.isEmpty && phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a name or phone number.')),
+      );
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('safety_contact_name', name);
+    await prefs.setString('safety_contact_phone', phone);
+
+    setState(() {
+      _trustedContactName = name;
+      _trustedContactPhone = phone;
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Trusted contact saved.')),
+    );
+  }
+
+  Future<void> _clearTrustedContact() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('safety_contact_name');
+    await prefs.remove('safety_contact_phone');
+    _contactNameController.clear();
+    _contactPhoneController.clear();
+    setState(() {
+      _trustedContactName = '';
+      _trustedContactPhone = '';
+    });
+  }
+
   Future<void> _toggleCheckIn(bool value) async {
     setState(() {
       workoutCheckIn = value;
@@ -3049,9 +3466,7 @@ class _WomensSafetyModeScreenState extends State<WomensSafetyModeScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          value ? L.t('checkInEnabled') : L.t('checkInDisabled'),
-        ),
+        content: Text(value ? L.t('checkInEnabled') : L.t('checkInDisabled')),
       ),
     );
   }
@@ -3059,6 +3474,61 @@ class _WomensSafetyModeScreenState extends State<WomensSafetyModeScreen> {
   void _quickExit() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _openInMaps() async {
+    if (_savedLat == null || _savedLng == null) return;
+    final uri = Uri.parse(
+      'geo:${_savedLat!},${_savedLng!}?q=${_savedLat!},${_savedLng!}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      final mapsUri = Uri.parse(
+        'https://www.google.com/maps?q=${_savedLat!},${_savedLng!}',
+      );
+      await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _shareLocation() {
+    if (_savedLocation == null) return;
+    final mapsLink =
+        'https://www.google.com/maps?q=$_savedLat,$_savedLng';
+    SharePlus.instance.share(
+      ShareParams(
+        text: 'My location: $_savedLocation\n$mapsLink',
+      ),
+    );
+  }
+
+  Future<void> _callContact() async {
+    if (_trustedContactPhone.isEmpty) return;
+    final uri = Uri.parse('tel:${_trustedContactPhone.replaceAll(' ', '')}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open phone dialer.')),
+      );
+    }
+  }
+
+  Future<void> _whatsappContact() async {
+    if (_trustedContactPhone.isEmpty) return;
+    final cleaned = _trustedContactPhone.replaceAll(RegExp(r'[^\d]'), '');
+    final uri = Uri.parse('https://wa.me/$cleaned');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WhatsApp is not installed or unavailable.'),
+        ),
+      );
     }
   }
 
@@ -3124,26 +3594,202 @@ class _WomensSafetyModeScreenState extends State<WomensSafetyModeScreen> {
 
           const SizedBox(height: 20),
 
-          const _WellnessSection(
-            title: '📍 Safe Workout Location',
-            icon: Icons.location_on_outlined,
-            items: [
-              'Prefer familiar and well-lit places.',
-              'Choose environments where help is available if needed.',
-              'For outdoor activity, consider telling a trusted person your general plan.',
-              'At home, keep the workout space clear.',
-            ],
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Saved Workout Location',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_savedLocation != null) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, size: 18, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _savedLocation!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _clearSavedLocation,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Clear'),
+                    ),
+                  ),
+                ] else
+                  const Text(
+                    'No location saved yet.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _savingLocation ? null : _saveCurrentLocation,
+                    icon: _savingLocation
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location),
+                    label: Text(_savingLocation ? 'Getting Location...' : 'Save Current Location'),
+                  ),
+                ),
+                if (_savedLat != null && _savedLng != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _openInMaps,
+                          icon: const Icon(Icons.map_outlined, size: 18),
+                          label: const Text('Open in Maps'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _shareLocation,
+                          icon: const Icon(Icons.share_outlined, size: 18),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
 
-          const _WellnessSection(
-            title: '👤 Trusted Contact',
-            icon: Icons.person_outline,
-            items: [
-              'FitAI should allow the user to choose a trusted contact.',
-              'Contact information must remain private.',
-              'Any contact sharing should require explicit user permission.',
-              'Do not automatically expose contact information.',
-            ],
+          const SizedBox(height: 14),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.person_outline, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Trusted Contact',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_trustedContactName.isNotEmpty || _trustedContactPhone.isNotEmpty) ...[
+                  if (_trustedContactName.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.badge_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(_trustedContactName, style: const TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  if (_trustedContactPhone.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(_trustedContactPhone, style: const TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _clearTrustedContact,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Clear'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                TextField(
+                  controller: _contactNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Name',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _contactPhoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _saveTrustedContact,
+                    icon: const Icon(Icons.save_outlined),
+                    label: const Text('Save Contact'),
+                  ),
+                ),
+                if (_trustedContactPhone.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _callContact,
+                          icon: const Icon(Icons.phone_outlined, size: 18),
+                          label: const Text('Call'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _whatsappContact,
+                          icon: const Icon(Icons.chat_outlined, size: 18),
+                          label: const Text('WhatsApp'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 6),
+                const Text(
+                  'Contact info stays on your device. It is never shared automatically.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
 
           Container(
@@ -4151,6 +4797,40 @@ class _CycleAwareFitnessScreenState extends State<CycleAwareFitnessScreen> {
                                         );
                                       },
                                     ),
+                                    IconButton(
+                                      tooltip: 'Open camera mirror',
+                                      icon: Icon(
+                                        Icons.camera_alt_outlined,
+                                        size: 18,
+                                        color: colorScheme.tertiary,
+                                      ),
+                                      onPressed: () {
+                                        final libExercise =
+                                            ExerciseLibrary.findCameraExercise(
+                                              exercise,
+                                            );
+                                        final type =
+                                            libExercise?.poseExerciseType;
+                                        ExerciseType? exerciseType;
+                                        if (type != null) {
+                                          for (final t in ExerciseType.values) {
+                                            if (t.name == type) {
+                                              exerciseType = t;
+                                              break;
+                                            }
+                                          }
+                                        }
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => FormCheckScreen(
+                                              initialExercise: exerciseType ?? ExerciseType.generic,
+                                              exerciseName: exercise,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ),
@@ -4457,12 +5137,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       for (final item in savedExercises) {
         final parts = item.split('|');
 
-        if (parts.length == 4) {
+        if (parts.length >= 4) {
           exercises.add({
             'name': parts[0],
             'muscle': parts[1],
             'sets': int.tryParse(parts[2]) ?? 3,
             'reps': int.tryParse(parts[3]) ?? 10,
+            'poseType': parts.length > 4 && parts[4].isNotEmpty
+                ? parts[4]
+                : null,
           });
         }
       }
@@ -4597,7 +5280,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               icon: const Icon(Icons.play_arrow),
               label: Text(
                 L.t('startWorkout'),
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurpleAccent,
@@ -4695,6 +5381,8 @@ class _ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cameraExercise = ExerciseLibrary.findCameraExercise(name);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -4713,7 +5401,41 @@ class _ExerciseTile extends StatelessWidget {
         ),
         title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(details),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 15),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.camera_alt, color: Colors.blue, size: 20),
+              tooltip: 'Open camera mirror',
+              visualDensity: VisualDensity.compact,
+              onPressed: () {
+                ExerciseType? exerciseType;
+                if (cameraExercise != null) {
+                  final type = cameraExercise.poseExerciseType;
+                  if (type != null) {
+                    for (final t in ExerciseType.values) {
+                      if (t.name == type) {
+                        exerciseType = t;
+                        break;
+                      }
+                    }
+                  }
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        FormCheckScreen(
+                          initialExercise: exerciseType ?? ExerciseType.generic,
+                          exerciseName: name,
+                        ),
+                  ),
+                );
+              },
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 15),
+          ],
+        ),
       ),
     );
   }
@@ -4890,6 +5612,48 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
           const SizedBox(height: 24),
 
+          if (totalWorkouts == 0 &&
+              totalExercises == 0 &&
+              totalHours == 0.0) ...[
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.emoji_events_outlined,
+                    size: 64,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    L.t('progressEmptyTitle'),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    L.t('progressEmptySubtitle'),
+                    style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (context.mounted) {
+                        DefaultTabController.maybeOf(context)?.animateTo(1);
+                      }
+                    },
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(L.t('startWorkout')),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
           Row(
             children: [
               Expanded(
@@ -5021,7 +5785,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 Text(
                   '${L.t("keepGoing")} \u{1F4AA}',
-                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -5175,7 +5942,9 @@ class _ActivityRow extends StatelessWidget {
                 const SizedBox(height: 3),
 
                 Text(
-                  completed ? L.t('workoutCompletedLabel') : L.t('restNoWorkout'),
+                  completed
+                      ? L.t('workoutCompletedLabel')
+                      : L.t('restNoWorkout'),
                   style: TextStyle(
                     fontSize: 12,
                     color: completed ? Colors.green : Colors.grey.shade500,
@@ -5246,14 +6015,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       if (!mounted) return;
       setState(() {
         _isPersonalizedPlan = true;
-        exercises = todayPlan!.exercises.map((e) => {
-          'name': e.name,
-          'muscle': e.muscleGroup,
-          'sets': e.sets,
-          'reps': e.reps,
-          'instructions': e.instructions,
-          'restSeconds': e.restSeconds,
-        }).toList();
+        exercises = todayPlan!.exercises
+            .map(
+              (e) => {
+                'name': e.name,
+                'muscle': e.muscleGroup,
+                'sets': e.sets,
+                'reps': e.reps,
+                'instructions': e.instructions,
+                'restSeconds': e.restSeconds,
+              },
+            )
+            .toList();
       });
       return;
     }
@@ -5294,12 +6067,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     // Handle loading state
     if (exercises.isEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(L.t('activeWorkout')),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: Text(L.t('activeWorkout'))),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -5319,9 +6088,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const GymMusicScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const GymMusicScreen()),
               );
             },
           ),
@@ -5345,7 +6112,9 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             Row(
               children: [
                 Icon(
-                  _isPersonalizedPlan ? Icons.auto_awesome : Icons.fitness_center,
+                  _isPersonalizedPlan
+                      ? Icons.auto_awesome
+                      : Icons.fitness_center,
                   size: 16,
                   color: _isPersonalizedPlan ? Colors.amber : Colors.grey,
                 ),
@@ -5454,8 +6223,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               height: 55,
 
               child: ElevatedButton.icon(
-                onPressed: (completedExercises == exercises.length ||
-                        _workoutRecorded)
+                onPressed:
+                    (completedExercises == exercises.length || _workoutRecorded)
                     ? null
                     : () async {
                         setState(() {
@@ -5600,7 +6369,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 Text(
                   L.t('fitnessUser'),
-                  style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
 
                 const SizedBox(height: 4),
@@ -5722,6 +6494,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   String userHeight = 'Not added';
   String userWeight = 'Not added';
   String userGoal = 'Build strength';
+  String userGender = 'male';
+  List<String> userHealthConditions = [];
+  String userWorkoutLocation = 'Home';
+  List<String> userPreferredDays = [];
 
   @override
   void initState() {
@@ -5740,6 +6516,16 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       userHeight = prefs.getString('user_height') ?? 'Not added';
       userWeight = prefs.getString('user_weight') ?? 'Not added';
       userGoal = prefs.getString('user_goal') ?? 'Build strength';
+      userGender = prefs.getString('user_gender') ?? 'male';
+      userWorkoutLocation = prefs.getString('user_workout_location') ?? 'Home';
+      final healthJson = prefs.getString('user_health_conditions');
+      userHealthConditions = healthJson != null
+          ? List<String>.from(jsonDecode(healthJson) as List)
+          : [];
+      final daysJson = prefs.getString('user_preferred_days');
+      userPreferredDays = daysJson != null
+          ? List<String>.from(jsonDecode(daysJson) as List)
+          : [];
     });
   }
 
@@ -5803,9 +6589,291 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       onSaved(newValue);
     });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$title ${L.t("savedMsg")}: $newValue')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$title ${L.t("savedMsg")}: $newValue')),
+    );
+  }
+
+  String _ageGroupDisplay(String ageStr) {
+    final age = int.tryParse(ageStr);
+    if (age == null) return L.t('ageGroup_adult');
+    final group = AgeGroup.fromAge(age);
+    switch (group) {
+      case AgeGroup.child:
+        return L.t('ageGroup_child');
+      case AgeGroup.teen:
+        return L.t('ageGroup_teen');
+      case AgeGroup.older:
+        return L.t('ageGroup_older');
+      default:
+        return L.t('ageGroup_adult');
+    }
+  }
+
+  String _genderDisplay(String genderName) {
+    switch (genderName) {
+      case 'female':
+        return L.t('female');
+      case 'other':
+        return L.t('preferNotToSay');
+      default:
+        return L.t('male');
+    }
+  }
+
+  Future<void> _editGender() async {
+    String selected = userGender;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('gender')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: Text(L.t('male')),
+                    value: 'male',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text(L.t('female')),
+                    value: 'female',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text(L.t('preferNotToSay')),
+                    value: 'other',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(L.t('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_gender', selected);
+                    if (!mounted) return;
+                    setState(() => userGender = selected);
+                  },
+                  child: Text(L.t('save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _editHealthConditions() async {
+    final allConditions = HealthCondition.values
+        .where((c) => c != HealthCondition.none)
+        .toList();
+    List<String> selected = List<String>.from(userHealthConditions);
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('selectHealthConditions')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: allConditions.map((c) {
+                    return CheckboxListTile(
+                      title: Text(L.t('health_${c.name}')),
+                      value: selected.contains(c.name),
+                      onChanged: (checked) {
+                        setDialogState(() {
+                          if (checked == true) {
+                            selected.add(c.name);
+                          } else {
+                            selected.remove(c.name);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(L.t('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString(
+                      'user_health_conditions',
+                      jsonEncode(selected),
+                    );
+                    if (!mounted) return;
+                    setState(() => userHealthConditions = selected);
+                  },
+                  child: Text(L.t('save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _editWorkoutLocation() async {
+    String selected = userWorkoutLocation;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('workoutLocation')),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: Text(L.t('home')),
+                    value: 'Home',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text(L.t('gym')),
+                    value: 'Gym',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: Text(L.t('outdoor')),
+                    value: 'Outdoor',
+                    groupValue: selected,
+                    onChanged: (v) {
+                      setDialogState(() => selected = v!);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(L.t('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('user_workout_location', selected);
+                    if (!mounted) return;
+                    setState(() => userWorkoutLocation = selected);
+                  },
+                  child: Text(L.t('save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _editPreferredDays() async {
+    final allDays = [
+      L.t('monday'),
+      L.t('tuesday'),
+      L.t('wednesday'),
+      L.t('thursday'),
+      L.t('friday'),
+      L.t('saturday'),
+      L.t('sunday'),
+    ];
+    final dayKeys = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    List<String> selected = List<String>.from(userPreferredDays);
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('selectPreferredDays')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(7, (i) {
+                    return CheckboxListTile(
+                      title: Text(allDays[i]),
+                      value: selected.contains(dayKeys[i]),
+                      onChanged: (checked) {
+                        setDialogState(() {
+                          if (checked == true) {
+                            selected.add(dayKeys[i]);
+                          } else {
+                            selected.remove(dayKeys[i]);
+                          }
+                        });
+                      },
+                    );
+                  }),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(L.t('cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString(
+                      'user_preferred_days',
+                      jsonEncode(selected),
+                    );
+                    if (!mounted) return;
+                    setState(() => userPreferredDays = selected);
+                  },
+                  child: Text(L.t('save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -5851,6 +6919,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
               icon: Icons.cake_outlined,
               title: L.t('age'),
               value: userAge,
+              secondaryText: _ageGroupDisplay(userAge),
               onTap: () {
                 editInformation(
                   title: L.t('age'),
@@ -5913,6 +6982,40 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                 );
               },
             ),
+
+            _InformationCard(
+              icon: Icons.wc_outlined,
+              title: L.t('gender'),
+              value: _genderDisplay(userGender),
+              onTap: _editGender,
+            ),
+
+            _InformationCard(
+              icon: Icons.health_and_safety_outlined,
+              title: L.t('healthConditions'),
+              value: userHealthConditions.isEmpty
+                  ? L.t('none')
+                  : userHealthConditions
+                      .map((n) => L.t('health_$n'))
+                      .join(', '),
+              onTap: _editHealthConditions,
+            ),
+
+            _InformationCard(
+              icon: Icons.location_on_outlined,
+              title: L.t('workoutLocation'),
+              value: userWorkoutLocation,
+              onTap: _editWorkoutLocation,
+            ),
+
+            _InformationCard(
+              icon: Icons.calendar_today_outlined,
+              title: L.t('preferredDays'),
+              value: userPreferredDays.isEmpty
+                  ? L.t('none')
+                  : userPreferredDays.join(', '),
+              onTap: _editPreferredDays,
+            ),
           ],
         ),
       ),
@@ -5924,12 +7027,14 @@ class _InformationCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
+  final String? secondaryText;
   final VoidCallback? onTap;
 
   const _InformationCard({
     required this.icon,
     required this.title,
     required this.value,
+    this.secondaryText,
     this.onTap,
   });
 
@@ -5954,7 +7059,23 @@ class _InformationCard extends StatelessWidget {
             title,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          subtitle: Text(value),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value),
+              if (secondaryText != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    secondaryText!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 15),
           onTap: onTap,
         ),
@@ -6061,7 +7182,9 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
                 if (!context.mounted) return;
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${L.t("goalSavedMsg")}: $selectedGoal')),
+                  SnackBar(
+                    content: Text('${L.t("goalSavedMsg")}: $selectedGoal'),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -6073,7 +7196,10 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
               ),
               child: Text(
                 L.t('saveGoal'),
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -6268,9 +7394,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? ThemeMode.system
           : ThemeMode.dark,
     );
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${L.t("appearanceSavedMsg")}: $selected')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${L.t("appearanceSavedMsg")}: $selected')),
+    );
   }
 
   Future<void> chooseLanguage() async {
@@ -6305,9 +7431,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       language = selected;
     });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${L.t("languageSavedMsg")}: $selected')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${L.t("languageSavedMsg")}: $selected')),
+    );
   }
 
   @override
@@ -6657,9 +7783,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(L.t('dataDeletedMsg'))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(L.t('dataDeletedMsg'))));
   }
 
   // --------------------------------------------------
@@ -6698,94 +7824,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   // PERMISSIONS
   // --------------------------------------------------
 
-  Future<void> _showPermissions() async {
-    final activityStatus = await Permission.activityRecognition.status;
-    final cameraStatus = await Permission.camera.status;
-    final notificationStatus = await Permission.notification.status;
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(L.t('permissions')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _PermissionRow(
-                icon: Icons.directions_walk,
-                title: L.t('physicalActivity'),
-                subtitle: L.t('stepTracking'),
-                status: activityStatus.isGranted
-                    ? '${L.t("allowed")} \u2713'
-                    : '${L.t("allow")} >',
-                allowed: activityStatus.isGranted,
-                onTap: () async {
-                  await Permission.activityRecognition.request();
-
-                  if (!dialogContext.mounted) return;
-
-                  Navigator.pop(dialogContext);
-                  _showPermissions();
-                },
-              ),
-
-              _PermissionRow(
-                icon: Icons.camera_alt_outlined,
-                title: L.t('camera'),
-                subtitle: L.t('formChecking'),
-                status: cameraStatus.isGranted
-                    ? '${L.t("allowed")} \u2713'
-                    : '${L.t("allow")} >',
-                allowed: cameraStatus.isGranted,
-                onTap: () async {
-                  await Permission.camera.request();
-
-                  if (!dialogContext.mounted) return;
-
-                  Navigator.pop(dialogContext);
-                  _showPermissions();
-                },
-              ),
-
-              _PermissionRow(
-                icon: Icons.notifications_outlined,
-                title: L.t('notifications'),
-                subtitle: L.t('workoutReminders'),
-                status: notificationStatus.isGranted
-                    ? '${L.t("allowed")} \u2713'
-                    : '${L.t("allow")} >',
-                allowed: notificationStatus.isGranted,
-                onTap: () async {
-                  await Permission.notification.request();
-
-                  if (!dialogContext.mounted) return;
-
-                  Navigator.pop(dialogContext);
-                  _showPermissions();
-                },
-              ),
-
-              _PermissionRow(
-                icon: Icons.location_on_outlined,
-                title: L.t('location'),
-                subtitle: L.t('notRequired'),
-                status: L.t('notRequired'),
-                allowed: false,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: Text(L.t('close')),
-            ),
-          ],
-        );
-      },
+  void _showPermissions() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PermissionManagementScreen(),
+      ),
     );
   }
 }
@@ -6833,71 +7877,197 @@ class _PrivacyTile extends StatelessWidget {
 }
 
 // --------------------------------------------------
-// PERMISSION ROW
+// PERMISSION MANAGEMENT SCREEN
 // --------------------------------------------------
 
-class _PermissionRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String status;
-  final bool allowed;
-  final VoidCallback? onTap;
+class PermissionManagementScreen extends StatefulWidget {
+  const PermissionManagementScreen({super.key});
 
-  const _PermissionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.allowed,
-    this.onTap,
-  });
+  @override
+  State<PermissionManagementScreen> createState() =>
+      _PermissionManagementScreenState();
+}
+
+class _PermissionManagementScreenState
+    extends State<PermissionManagementScreen> {
+  final Map<String, PermissionStatus> _statuses = {};
+  bool _loading = true;
+
+  static const _permissionItems =
+      <
+        ({
+          String key,
+          Permission permission,
+          IconData icon,
+          String titleKey,
+          String subtitleKey,
+        })
+      >[
+        (
+          key: 'camera',
+          permission: Permission.camera,
+          icon: Icons.camera_alt_outlined,
+          titleKey: 'camera',
+          subtitleKey: 'formChecking',
+        ),
+        (
+          key: 'microphone',
+          permission: Permission.microphone,
+          icon: Icons.mic_outlined,
+          titleKey: 'microphone',
+          subtitleKey: 'voiceInput',
+        ),
+        (
+          key: 'notification',
+          permission: Permission.notification,
+          icon: Icons.notifications_outlined,
+          titleKey: 'notifications',
+          subtitleKey: 'workoutReminders',
+        ),
+        (
+          key: 'activity',
+          permission: Permission.activityRecognition,
+          icon: Icons.directions_walk,
+          titleKey: 'physicalActivity',
+          subtitleKey: 'stepTracking',
+        ),
+      ];
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshStatuses();
+  }
+
+  Future<void> _refreshStatuses() async {
+    final map = <String, PermissionStatus>{};
+    for (final item in _permissionItems) {
+      map[item.key] = await item.permission.status;
+    }
+    if (!mounted) return;
+    setState(() {
+      _statuses.clear();
+      _statuses.addAll(map);
+      _loading = false;
+    });
+  }
+
+  Future<void> _requestPermission(Permission permission) async {
+    await permission.request();
+    await _refreshStatuses();
+  }
+
+  Future<void> _openAppSettings() async {
+    await openAppSettings();
+    await _refreshStatuses();
+  }
+
+  String _statusLabel(PermissionStatus status) {
+    if (status.isGranted) return '${L.t("allowed")} \u2713';
+    if (status.isPermanentlyDenied) return L.t('permanentlyDenied');
+    if (status.isDenied) return L.t('denied');
+    if (status.isLimited) return L.t('limited');
+    return status.name;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.deepPurpleAccent),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+    return Scaffold(
+      appBar: AppBar(title: Text(L.t('permissions'))),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  L.t('permissions'),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  L.t('permissionsSubtitle'),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 24),
+                for (final item in _permissionItems) _buildPermissionCard(item),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _openAppSettings,
+                  icon: const Icon(Icons.settings),
+                  label: Text(L.t('openAppSettings')),
+                ),
+              ],
+            ),
+    );
+  }
 
-                  const SizedBox(height: 3),
+  Widget _buildPermissionCard(
+    ({
+      String key,
+      Permission permission,
+      IconData icon,
+      String titleKey,
+      String subtitleKey,
+    })
+    item,
+  ) {
+    final status = _statuses[item.key] ?? PermissionStatus.denied;
+    final isGranted = status.isGranted;
+    final isPermanentlyDenied = status.isPermanentlyDenied;
 
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(item.icon, color: Colors.deepPurpleAccent, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  L.t(item.titleKey),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  L.t(item.subtitleKey),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _statusLabel(status),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isGranted ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(width: 8),
-
-            Text(
-              status,
-              style: TextStyle(
-                color: allowed ? Colors.green : Colors.deepPurpleAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+          if (!isGranted)
+            isPermanentlyDenied
+                ? TextButton(
+                    onPressed: _openAppSettings,
+                    child: Text(L.t('openSettings')),
+                  )
+                : FilledButton.tonal(
+                    onPressed: () => _requestPermission(item.permission),
+                    child: Text(L.t('allow')),
+                  ),
+        ],
       ),
     );
   }
@@ -6932,7 +8102,10 @@ class AboutAIScreen extends StatelessWidget {
 
                 Text(
                   L.t('appName'),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
@@ -6959,7 +8132,10 @@ class AboutAIScreen extends StatelessWidget {
               children: [
                 Text(
                   L.t('version'),
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 const Text('1.0.0', style: TextStyle(color: Colors.grey)),
@@ -6968,7 +8144,10 @@ class AboutAIScreen extends StatelessWidget {
 
                 Text(
                   L.t('about'),
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -7033,6 +8212,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
           'muscle': parts.length > 1 ? parts[1] : 'Custom',
           'sets': parts.length > 2 ? int.tryParse(parts[2]) ?? 3 : 3,
           'reps': parts.length > 3 ? int.tryParse(parts[3]) ?? 10 : 10,
+          'poseType': parts.length > 4 && parts[4].isNotEmpty ? parts[4] : null,
         };
       }).toList();
 
@@ -7044,10 +8224,12 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     final data = customExercises.map((exercise) {
+      final poseType = exercise['poseType'] as String? ?? '';
       return '${exercise['name']}|'
           '${exercise['muscle']}|'
           '${exercise['sets']}|'
-          '${exercise['reps']}';
+          '${exercise['reps']}|'
+          '$poseType';
     }).toList();
 
     await prefs.setStringList('custom_exercises', data);
@@ -7071,64 +8253,74 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(L.t('addCustomExercise')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(labelText: L.t('exerciseName')),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('addCustomExercise')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: L.t('exerciseName'),
+                      ),
+                    ),
+                    TextField(
+                      controller: muscleController,
+                      decoration: InputDecoration(
+                        labelText: L.t('muscleGroup'),
+                      ),
+                    ),
+                    TextField(
+                      controller: setsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: L.t('sets')),
+                    ),
+                    TextField(
+                      controller: repsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: L.t('repetitions'),
+                      ),
+                    ),
+                  ],
                 ),
-                TextField(
-                  controller: muscleController,
-                  decoration: InputDecoration(labelText: L.t('muscleGroup')),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: Text(L.t('cancel')),
                 ),
-                TextField(
-                  controller: setsController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: L.t('sets')),
-                ),
-                TextField(
-                  controller: repsController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: L.t('repetitions')),
+                ElevatedButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+
+                    if (name.isEmpty) return;
+
+                    final muscle = muscleController.text.trim().isEmpty
+                        ? 'Custom'
+                        : muscleController.text.trim();
+
+                    final sets = int.tryParse(setsController.text) ?? 3;
+
+                    final reps = int.tryParse(repsController.text) ?? 10;
+
+                    Navigator.pop(dialogContext, {
+                      'name': name,
+                      'muscle': muscle,
+                      'sets': sets,
+                      'reps': reps,
+                    });
+                  },
+                  child: Text(L.t('addExercise')),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: Text(L.t('cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-
-                if (name.isEmpty) return;
-
-                final muscle = muscleController.text.trim().isEmpty
-                    ? 'Custom'
-                    : muscleController.text.trim();
-
-                final sets = int.tryParse(setsController.text) ?? 3;
-
-                final reps = int.tryParse(repsController.text) ?? 10;
-
-                Navigator.pop(dialogContext, {
-                  'name': name,
-                  'muscle': muscle,
-                  'sets': sets,
-                  'reps': reps,
-                });
-              },
-              child: Text(L.t('addExercise')),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -7144,9 +8336,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${L.t("exerciseAddedMsg")} \u{1F4AA}'),
-      ),
+      SnackBar(content: Text('${L.t("exerciseAddedMsg")} \u{1F4AA}')),
     );
   }
 
@@ -7217,58 +8407,68 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(L.t('editExercise')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(labelText: L.t('exerciseName')),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(L.t('editExercise')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: L.t('exerciseName'),
+                      ),
+                    ),
+                    TextField(
+                      controller: muscleController,
+                      decoration: InputDecoration(
+                        labelText: L.t('muscleGroup'),
+                      ),
+                    ),
+                    TextField(
+                      controller: setsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: L.t('sets')),
+                    ),
+                    TextField(
+                      controller: repsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: L.t('repetitions'),
+                      ),
+                    ),
+                  ],
                 ),
-                TextField(
-                  controller: muscleController,
-                  decoration: InputDecoration(labelText: L.t('muscleGroup')),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: Text(L.t('cancel')),
                 ),
-                TextField(
-                  controller: setsController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: L.t('sets')),
-                ),
-                TextField(
-                  controller: repsController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: L.t('repetitions')),
+                ElevatedButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+
+                    if (name.isEmpty) return;
+
+                    Navigator.pop(dialogContext, {
+                      'name': name,
+                      'muscle': muscleController.text.trim().isEmpty
+                          ? 'Custom'
+                          : muscleController.text.trim(),
+                      'sets': int.tryParse(setsController.text) ?? 3,
+                      'reps': int.tryParse(repsController.text) ?? 10,
+                    });
+                  },
+                  child: Text(L.t('saveChanges')),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: Text(L.t('cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-
-                if (name.isEmpty) return;
-
-                Navigator.pop(dialogContext, {
-                  'name': name,
-                  'muscle': muscleController.text.trim().isEmpty
-                      ? 'Custom'
-                      : muscleController.text.trim(),
-                  'sets': int.tryParse(setsController.text) ?? 3,
-                  'reps': int.tryParse(repsController.text) ?? 10,
-                });
-              },
-              child: Text(L.t('saveChanges')),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -7283,9 +8483,9 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(L.t('exerciseUpdatedMsg'))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(L.t('exerciseUpdatedMsg'))));
   }
 
   Future<void> hideDefaultExercise(Map<String, dynamic> exercise) async {
@@ -7299,9 +8499,9 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name ${L.t("hiddenMsg")}')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$name ${L.t("hiddenMsg")}')));
   }
 
   Future<void> showDefaultExercise(Map<String, dynamic> exercise) async {
@@ -7376,88 +8576,93 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (cameraExercise != null)
-              IconButton(
-                icon: const Icon(Icons.camera_alt, color: Colors.blue),
-                tooltip: L.t('formCheck'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FormCheckScreen(
-                        initialExercise:
-                            _parseExerciseType(cameraExercise.poseExerciseType),
-                        targetSets: cameraExercise.defaultSets,
-                        targetRepsPerSet: cameraExercise.defaultReps,
+            IconButton(
+              icon: const Icon(Icons.camera_alt, color: Colors.blue),
+              tooltip: L.t('formCheck'),
+              onPressed: () {
+                ExerciseType? exerciseType;
+                if (cameraExercise != null) {
+                  exerciseType = _parseExerciseType(
+                    cameraExercise.poseExerciseType,
+                  );
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FormCheckScreen(
+                      initialExercise: exerciseType ?? ExerciseType.generic,
+                      exerciseName: exercise['name'] as String,
+                    ),
+                  ),
+                );
+              },
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit' && customIndex != null) {
+                  editCustomExercise(customIndex);
+                }
+
+                if (value == 'delete' && customIndex != null) {
+                  deleteCustomExercise(customIndex);
+                }
+
+                if (value == 'hide') {
+                  hideDefaultExercise(exercise);
+                }
+
+                if (value == 'restore') {
+                  showDefaultExercise(exercise);
+                }
+              },
+              itemBuilder: (context) {
+                if (isCustom) {
+                  return [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_outlined),
+                          const SizedBox(width: 10),
+                          Text(L.t('edit')),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
-            PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit' && customIndex != null) {
-              editCustomExercise(customIndex);
-            }
-
-            if (value == 'delete' && customIndex != null) {
-              deleteCustomExercise(customIndex);
-            }
-
-            if (value == 'hide') {
-              hideDefaultExercise(exercise);
-            }
-
-            if (value == 'restore') {
-              showDefaultExercise(exercise);
-            }
-          },
-          itemBuilder: (context) {
-            if (isCustom) {
-              return [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.edit_outlined),
-                      const SizedBox(width: 10),
-                      Text(L.t('edit')),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.delete_outline),
-                      const SizedBox(width: 10),
-                      Text(L.t('delete')),
-                    ],
-                  ),
-                ),
-              ];
-            }
-
-            final isHidden = hiddenDefaultExercises.contains(exercise['name']);
-
-            return [
-              PopupMenuItem(
-                value: isHidden ? 'restore' : 'hide',
-                child: Row(
-                  children: [
-                    Icon(
-                      isHidden
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_outline),
+                          const SizedBox(width: 10),
+                          Text(L.t('delete')),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    Text(isHidden ? L.t('restore') : L.t('hide')),
-                  ],
-                ),
-              ),
-            ];
-          },
-        ),
+                  ];
+                }
+
+                final isHidden = hiddenDefaultExercises.contains(
+                  exercise['name'],
+                );
+
+                return [
+                  PopupMenuItem(
+                    value: isHidden ? 'restore' : 'hide',
+                    child: Row(
+                      children: [
+                        Icon(
+                          isHidden
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(isHidden ? L.t('restore') : L.t('hide')),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+            ),
           ],
         ),
       ),
@@ -7549,4 +8754,2052 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   }
 }
 
+// ================================================================
+// MEN'S NUTRITION SCREEN
+// ================================================================
 
+class MensNutritionScreen extends StatefulWidget {
+  const MensNutritionScreen({super.key});
+
+  @override
+  State<MensNutritionScreen> createState() => _MensNutritionScreenState();
+}
+
+class _MensNutritionScreenState extends State<MensNutritionScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensNutrition'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensNutrition'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Balanced nutrition for men — protein, whole grains, fruits and vegetables for daily energy and long-term health.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          const _WellnessSection(
+            title: '🍽️ Daily Nutrition',
+            icon: Icons.restaurant_outlined,
+            items: [
+              'Breakfast — Eggs + whole wheat toast + fruit, OR oats + milk + nuts + banana.',
+              'Lunch — Chicken/fish + rice/roti + vegetables, OR daal + roti + salad.',
+              'Snack — Yogurt + fruit, OR roasted chana + nuts.',
+              'Dinner — Protein source + roti/rice + vegetables.',
+              'Hydration — Drink water regularly throughout the day.',
+              'Include protein in every meal for muscle support and satiety.',
+            ],
+          ),
+
+          const Text(
+            'Meal Ideas',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Breakfast',
+              baseFoodOptions: [
+                'Eggs + whole wheat toast + fruit',
+                'Oats + milk + nuts + banana',
+              ],
+              context: "men's nutrition",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Lunch',
+              baseFoodOptions: [
+                'Chicken/fish + rice/roti + vegetables',
+                'Daal + roti + salad',
+              ],
+              context: "men's nutrition",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Snack',
+              baseFoodOptions: ['Yogurt + fruit', 'Roasted chana + nuts'],
+              context: "men's nutrition",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Dinner',
+              baseFoodOptions: [
+                'Protein source + roti/rice + vegetables',
+              ],
+              context: "men's nutrition",
+            ),
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Healthy Meal Prep Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'A light walk to support digestion and daily movement. Maintain a comfortable pace.',
+            benefit: 'Supports digestion and daily calorie balance',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Nutrition needs vary by individual. FitAI provides general guidance and does not prescribe restrictive diets.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S FITNESS SCREEN
+// ================================================================
+
+class MensFitnessScreen extends StatefulWidget {
+  const MensFitnessScreen({super.key});
+
+  @override
+  State<MensFitnessScreen> createState() => _MensFitnessScreenState();
+}
+
+class _MensFitnessScreenState extends State<MensFitnessScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final repRange = personalizer.personalizedRepRange();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensFitness'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensFitness'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Strength and conditioning exercises for men. Adjust reps and intensity based on your experience level.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '💪 Strength Exercises',
+            icon: Icons.fitness_center_outlined,
+            items: [
+              'Push-ups — $repRange.',
+              'Bodyweight squats — $repRange.',
+              'Lunges — $repRange each leg.',
+              'Plank hold — 20-45 seconds.',
+              'Jumping jacks — $repRange.',
+              'Rest 60-90 seconds between sets.',
+            ],
+          ),
+
+          const Text(
+            'Exercises',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Push-Up',
+            durationOrReps: repRange,
+            instructions:
+                'Start in a plank position with hands shoulder-width apart. Lower body until chest nearly touches the floor. Push back up with control.',
+            benefit: 'Builds chest, shoulder and tricep strength',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Bodyweight Squat',
+            durationOrReps: repRange,
+            instructions:
+                'Stand with feet shoulder-width apart. Bend knees and lower hips back and down. Keep chest upright. Return to standing.',
+            benefit: 'Builds lower-body strength and mobility',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Lunges',
+            durationOrReps: '$repRange each leg',
+            instructions:
+                'Step forward with one leg and lower hips until both knees are at 90 degrees. Push back to standing. Alternate legs.',
+            benefit: 'Improves leg strength and balance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Plank Hold',
+            durationOrReps: '20-45 seconds',
+            instructions:
+                'Hold a straight-body position on forearms and toes. Keep core tight and body in a straight line. Breathe steadily.',
+            benefit: 'Strengthens core and stabilizer muscles',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Jumping Jack',
+            durationOrReps: repRange,
+            instructions:
+                'Jump feet apart while raising arms overhead. Jump back to starting position. Maintain a steady rhythm.',
+            benefit: 'Improves cardiovascular fitness and coordination',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Start with a comfortable intensity and progress gradually. FitAI provides general fitness guidance.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S HORMONAL WELLNESS SCREEN
+// ================================================================
+
+class MensHormonalWellnessScreen extends StatefulWidget {
+  const MensHormonalWellnessScreen({super.key});
+
+  @override
+  State<MensHormonalWellnessScreen> createState() =>
+      _MensHormonalWellnessScreenState();
+}
+
+class _MensHormonalWellnessScreenState
+    extends State<MensHormonalWellnessScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final repRange = personalizer.personalizedRepRange();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+    final recoveryGuidance = personalizer.personalizedRecoveryGuidance();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensHormonalWellness'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensHormonalWellness'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'A personalized wellness layer for movement, meals, recovery and daily hormonal health tracking.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🏃 Movement',
+            icon: Icons.fitness_center_outlined,
+            items: [
+              'Walking — $walkDuration based on your profile.',
+              'Mobility — $mobilityDuration of gentle movement.',
+              'Supported squat — $repRange.',
+              'Wall push-up — $repRange.',
+              'Glute bridge — $repRange.',
+              'Choose intensity according to your experience and energy.',
+            ],
+          ),
+
+          const Text(
+            'Movement Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Brisk Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a brisk but comfortable pace. Maintain upright posture and breathe naturally.',
+            benefit: 'Supports cardiovascular health and hormone balance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Mobility',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Perform comfortable shoulder rolls, hip circles, and ankle circles. Move within a comfortable range.',
+            benefit: 'Maintains flexibility and reduces stiffness',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Supported Squat',
+            durationOrReps: repRange,
+            instructions:
+                'Stand with feet shoulder-width apart. Slowly bend knees and hips while keeping chest upright. Return to standing with control.',
+            benefit: 'Builds lower-body strength and stability',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Wall Push-Up',
+            durationOrReps: repRange,
+            instructions:
+                'Stand facing a wall. Place hands on wall and bend elbows toward it. Push back to starting position with control.',
+            benefit: 'Develops upper-body strength',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Glute Bridge',
+            durationOrReps: repRange,
+            instructions:
+                'Lie on your back with knees bent. Lift hips slowly while keeping movement controlled. Lower gently and repeat.',
+            benefit: 'Strengthens glutes and core muscles',
+          ),
+
+          const _WellnessSection(
+            title: '🍽️ Balanced Eating',
+            icon: Icons.restaurant_outlined,
+            items: [
+              'Breakfast — Eggs + toast + fruit, OR oats + milk/yogurt + fruit + nuts.',
+              'Lunch — Daal/chickpeas + roti + vegetables, OR chicken/fish + rice + vegetables.',
+              'Snack — Yogurt + fruit, OR roasted chana.',
+              'Dinner — Protein-containing food + roti/rice + vegetables.',
+              'Hydration — Drink regularly throughout the day.',
+            ],
+          ),
+
+          const Text(
+            'Meal Details',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Breakfast',
+              baseFoodOptions: [
+                'Eggs + toast + fruit',
+                'Oats + milk/yogurt + fruit + nuts',
+              ],
+              context: "men's hormonal wellness",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Lunch',
+              baseFoodOptions: [
+                'Daal/chickpeas + roti + vegetables',
+                'Chicken/fish + rice + vegetables',
+              ],
+              context: "men's hormonal wellness",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Snack',
+              baseFoodOptions: ['Yogurt + fruit', 'Roasted chana'],
+              context: "men's hormonal wellness",
+            ),
+          ),
+
+          _MealDetailCard(
+            meal: personalizer.generate(
+              mealName: 'Dinner',
+              baseFoodOptions: [
+                'Protein-containing food + roti/rice + vegetables',
+              ],
+              context: "men's hormonal wellness",
+            ),
+          ),
+
+          _WellnessSection(
+            title: '😴 Sleep & Recovery',
+            icon: Icons.bedtime_outlined,
+            items: [
+              'Keep a consistent sleep/wake routine when possible.',
+              'Create a calm wind-down period before sleep.',
+              recoveryGuidance,
+              'Gentle walking or mobility can be used for recovery when comfortable.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Hormonal health is individual. FitAI provides general wellness information and does not diagnose hormonal disorders.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S HEART & METABOLIC HEALTH SCREEN
+// ================================================================
+
+class MensHeartHealthScreen extends StatefulWidget {
+  const MensHeartHealthScreen({super.key});
+
+  @override
+  State<MensHeartHealthScreen> createState() => _MensHeartHealthScreenState();
+}
+
+class _MensHeartHealthScreenState extends State<MensHeartHealthScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensHeartHealth'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensHeartHealth'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Cardiovascular and metabolic health activities for men. Focus on steady movement and heart-friendly habits.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '❤️ Heart-Healthy Activities',
+            icon: Icons.monitor_heart_outlined,
+            items: [
+              'Comfortable walking — $walkDuration.',
+              'Step-ups — steady pace.',
+              'Light jogging march — comfortable intensity.',
+              'Standing stretch — gentle movement.',
+              'Cool-down walk — relaxed pace.',
+              'Keep intensity comfortable and sustainable.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Comfortable Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a comfortable pace. Maintain relaxed posture and breathe naturally.',
+            benefit: 'Supports cardiovascular health and daily energy',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Step-Ups',
+            durationOrReps: walkDuration,
+            instructions:
+                'Step up onto a low platform or stair with one foot, then bring the other foot up. Step down and repeat. Alternate leading foot.',
+            benefit: 'Builds leg strength and cardiovascular endurance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Light Jogging March',
+            durationOrReps: walkDuration,
+            instructions:
+                'March in place with exaggerated knee lifts at a brisk pace. Swing arms naturally. Keep breathing steady.',
+            benefit: 'Improves heart health and leg mobility',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Standing Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and reach arms overhead. Gently stretch side to side. Roll shoulders and stretch arms across chest.',
+            benefit: 'Maintains flexibility and reduces tension',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace to cool down. Let heart rate return gradually to normal. Breathe deeply.',
+            benefit: 'Aids recovery and reduces muscle stiffness',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Heart health is individual. FitAI provides general wellness information. Consult a doctor for specific heart concerns.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S STRESS & MENTAL WELLNESS SCREEN
+// ================================================================
+
+class MensStressMentalScreen extends StatefulWidget {
+  const MensStressMentalScreen({super.key});
+
+  @override
+  State<MensStressMentalScreen> createState() => _MensStressMentalScreenState();
+}
+
+class _MensStressMentalScreenState extends State<MensStressMentalScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensStressMental'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensStressMental'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Stress management and mental wellbeing activities for men. Gentle movement, breathing and mindful stretching.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🧘 Stress Relief Activities',
+            icon: Icons.psychology_outlined,
+            items: [
+              'Gentle walking — $walkDuration.',
+              'Deep breathing walk — $walkDuration.',
+              'Shoulder stretch — $mobilityDuration.',
+              'Mindful stretch — $mobilityDuration.',
+              'Cool-down walk — relaxed pace.',
+              'Focus on breathing and relaxation, not intensity.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a gentle, relaxed pace. Focus on your breathing and surroundings. Let tension release with each step.',
+            benefit: 'Reduces stress and supports mental clarity',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Deep Breathing Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk slowly while breathing deeply. Inhale through the nose for 3-4 steps, exhale through the mouth for 3-4 steps.',
+            benefit: 'Calms the nervous system and reduces anxiety',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Shoulder Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Roll shoulders forward and backward slowly. Stretch each arm across the chest. Release neck tension with gentle side stretches.',
+            benefit: 'Releases upper body tension from stress',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Mindful Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and stretch arms overhead. Gently bend side to side. Hold each stretch comfortably while breathing deeply.',
+            benefit: 'Combines physical relief with mental relaxation',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace. Let your mind settle. Notice your surroundings without judgment.',
+            benefit: 'Promotes mental calm and physical recovery',
+          ),
+
+          const _WellnessSection(
+            title: '🧠 Daily Mental Wellness',
+            icon: Icons.mood_outlined,
+            items: [
+              'Take short breaks during work or stressful activities.',
+              'Stay connected with friends and family.',
+              'Limit screen time before sleep.',
+              'Practice gratitude or journaling when possible.',
+              'Seek professional support if stress feels overwhelming.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Mental health is individual. FitAI provides general wellness suggestions. Seek professional help for persistent stress or anxiety.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S RECOVERY SCREEN
+// ================================================================
+
+class MensRecoveryScreen extends StatefulWidget {
+  const MensRecoveryScreen({super.key});
+
+  @override
+  State<MensRecoveryScreen> createState() => _MensRecoveryScreenState();
+}
+
+class _MensRecoveryScreenState extends State<MensRecoveryScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+    final recoveryGuidance = personalizer.personalizedRecoveryGuidance();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensRecovery'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensRecovery'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Rest, stretching and recovery routines for men. Gentle movement to support muscle recovery and flexibility.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🧘 Recovery Activities',
+            icon: Icons.self_improvement_outlined,
+            items: [
+              'Gentle walking — $walkDuration.',
+              'Hip flexor stretch — comfortable hold.',
+              'Shoulder roll — $mobilityDuration.',
+              'Hamstring stretch — gentle hold each leg.',
+              'Cool-down walk — relaxed pace.',
+              'Move gently and never force a stretch.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a gentle pace to promote blood flow and recovery. Keep posture relaxed.',
+            benefit: 'Promotes blood flow and active recovery',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Hip Flexor Stretch',
+            durationOrReps: '30 seconds each side',
+            instructions:
+                'Kneel on one knee with the other foot forward. Gently push hips forward until you feel a stretch in the front of the hip. Hold comfortably.',
+            benefit: 'Releases hip tension from sitting and exercise',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Shoulder Roll',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Roll shoulders forward in slow circles, then backward. Keep movements controlled and breathing steady.',
+            benefit: 'Relieves shoulder and upper back tension',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Hamstring Stretch',
+            durationOrReps: '30 seconds each leg',
+            instructions:
+                'Sit on the floor with one leg extended. Reach gently toward the toes of the extended leg. Keep the back as straight as comfortable.',
+            benefit: 'Improves hamstring flexibility and reduces tightness',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace. Let your body recover gradually. Breathe deeply and evenly.',
+            benefit: 'Aids recovery and reduces muscle stiffness',
+          ),
+
+          _WellnessSection(
+            title: '😴 Recovery Tips',
+            icon: Icons.bedtime_outlined,
+            items: [
+              'Keep a consistent sleep/wake routine when possible.',
+              'Create a calm wind-down period before sleep.',
+              recoveryGuidance,
+              'Gentle walking or mobility can be used for recovery when comfortable.',
+              'Track recovery trends instead of chasing perfect numbers.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Recovery needs vary by individual. FitAI provides general wellness guidance. Listen to your body and rest when needed.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// WOMEN'S STRESS & MENTAL WELLNESS SCREEN
+// ================================================================
+
+class WomensStressMentalScreen extends StatefulWidget {
+  const WomensStressMentalScreen({super.key});
+
+  @override
+  State<WomensStressMentalScreen> createState() =>
+      _WomensStressMentalScreenState();
+}
+
+class _WomensStressMentalScreenState extends State<WomensStressMentalScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('womensStressMental'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('womensStressMental'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Stress management and mental wellbeing activities. Gentle movement, breathing and mindful stretching for daily calm.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🧘 Stress Relief Activities',
+            icon: Icons.psychology_outlined,
+            items: [
+              'Gentle walking — $walkDuration.',
+              'Deep breathing walk — $walkDuration.',
+              'Shoulder stretch — $mobilityDuration.',
+              'Mindful stretch — $mobilityDuration.',
+              'Cool-down walk — relaxed pace.',
+              'Focus on breathing and relaxation, not intensity.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a gentle, relaxed pace. Focus on your breathing and surroundings. Let tension release with each step.',
+            benefit: 'Reduces stress and supports mental clarity',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Deep Breathing Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk slowly while breathing deeply. Inhale through the nose for 3-4 steps, exhale through the mouth for 3-4 steps.',
+            benefit: 'Calms the nervous system and reduces anxiety',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Shoulder Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Roll shoulders forward and backward slowly. Stretch each arm across the chest. Release neck tension with gentle side stretches.',
+            benefit: 'Releases upper body tension from stress',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Mindful Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and stretch arms overhead. Gently bend side to side. Hold each stretch comfortably while breathing deeply.',
+            benefit: 'Combines physical relief with mental relaxation',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace. Let your mind settle. Notice your surroundings without judgment.',
+            benefit: 'Promotes mental calm and physical recovery',
+          ),
+
+          const _WellnessSection(
+            title: '🧠 Daily Mental Wellness',
+            icon: Icons.mood_outlined,
+            items: [
+              'Take short breaks during work or stressful activities.',
+              'Stay connected with friends and family.',
+              'Limit screen time before sleep.',
+              'Practice gratitude or journaling when possible.',
+              'Seek professional support if stress feels overwhelming.',
+            ],
+          ),
+
+          const _WellnessNote(
+            text:
+                'Mental health is individual. FitAI provides general wellness suggestions. Seek professional help for persistent stress or anxiety.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S SAFETY MODE SCREEN
+// ================================================================
+
+class MensSafetyModeScreen extends StatefulWidget {
+  const MensSafetyModeScreen({super.key});
+
+  @override
+  State<MensSafetyModeScreen> createState() => _MensSafetyModeScreenState();
+}
+
+class _MensSafetyModeScreenState extends State<MensSafetyModeScreen> {
+  bool workoutCheckIn = false;
+  bool awarenessReminder = true;
+
+  String? _savedLocation;
+  double? _savedLat;
+  double? _savedLng;
+  String _trustedContactName = '';
+  String _trustedContactPhone = '';
+  bool _savingLocation = false;
+
+  final _contactNameController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData();
+  }
+
+  @override
+  void dispose() {
+    _contactNameController.dispose();
+    _contactPhoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _savedLocation = prefs.getString('mens_safety_location');
+      _savedLat = prefs.getDouble('mens_safety_lat');
+      _savedLng = prefs.getDouble('mens_safety_lng');
+      _trustedContactName = prefs.getString('mens_safety_contact_name') ?? '';
+      _trustedContactPhone = prefs.getString('mens_safety_contact_phone') ?? '';
+      _contactNameController.text = _trustedContactName;
+      _contactPhoneController.text = _trustedContactPhone;
+    });
+  }
+
+  Future<void> _saveCurrentLocation() async {
+    setState(() => _savingLocation = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled.')),
+        );
+        setState(() => _savingLocation = false);
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission denied.')),
+          );
+          setState(() => _savingLocation = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Location permission permanently denied.')),
+        );
+        setState(() => _savingLocation = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final locationStr =
+          '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mens_safety_location', locationStr);
+      await prefs.setDouble('mens_safety_lat', position.latitude);
+      await prefs.setDouble('mens_safety_lng', position.longitude);
+
+      setState(() {
+        _savedLocation = locationStr;
+        _savedLat = position.latitude;
+        _savedLng = position.longitude;
+        _savingLocation = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location saved successfully.')),
+      );
+    } catch (e) {
+      setState(() => _savingLocation = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to get location: $e')),
+      );
+    }
+  }
+
+  Future<void> _clearSavedLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('mens_safety_location');
+    await prefs.remove('mens_safety_lat');
+    await prefs.remove('mens_safety_lng');
+    setState(() {
+      _savedLocation = null;
+      _savedLat = null;
+      _savedLng = null;
+    });
+  }
+
+  Future<void> _saveTrustedContact() async {
+    final name = _contactNameController.text.trim();
+    final phone = _contactPhoneController.text.trim();
+
+    if (name.isEmpty && phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a name or phone number.')),
+      );
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('mens_safety_contact_name', name);
+    await prefs.setString('mens_safety_contact_phone', phone);
+
+    setState(() {
+      _trustedContactName = name;
+      _trustedContactPhone = phone;
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Trusted contact saved.')),
+    );
+  }
+
+  Future<void> _clearTrustedContact() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('mens_safety_contact_name');
+    await prefs.remove('mens_safety_contact_phone');
+    _contactNameController.clear();
+    _contactPhoneController.clear();
+    setState(() {
+      _trustedContactName = '';
+      _trustedContactPhone = '';
+    });
+  }
+
+  Future<void> _toggleCheckIn(bool value) async {
+    setState(() {
+      workoutCheckIn = value;
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value ? L.t('checkInEnabled') : L.t('checkInDisabled')),
+      ),
+    );
+  }
+
+  void _quickExit() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _openInMaps() async {
+    if (_savedLat == null || _savedLng == null) return;
+    final uri = Uri.parse(
+      'geo:${_savedLat!},${_savedLng!}?q=${_savedLat!},${_savedLng!}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      final mapsUri = Uri.parse(
+        'https://www.google.com/maps?q=${_savedLat!},${_savedLng!}',
+      );
+      await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _shareLocation() {
+    if (_savedLocation == null) return;
+    final mapsLink =
+        'https://www.google.com/maps?q=$_savedLat,$_savedLng';
+    SharePlus.instance.share(
+      ShareParams(
+        text: 'My location: $_savedLocation\n$mapsLink',
+      ),
+    );
+  }
+
+  Future<void> _callContact() async {
+    if (_trustedContactPhone.isEmpty) return;
+    final uri = Uri.parse('tel:${_trustedContactPhone.replaceAll(' ', '')}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open phone dialer.')),
+      );
+    }
+  }
+
+  Future<void> _whatsappContact() async {
+    if (_trustedContactPhone.isEmpty) return;
+    final cleaned = _trustedContactPhone.replaceAll(RegExp(r'[^\d]'), '');
+    final uri = Uri.parse('https://wa.me/$cleaned');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WhatsApp is not installed or unavailable.'),
+        ),
+      );
+    }
+  }
+
+  void _showSafetyInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(L.t('mensSafetyMode')),
+        content: const Text(
+          'Safety-focused controls and reminders for workouts at home, in a gym or outdoors. Save your location, add a trusted contact, and use quick exit if needed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensSafetyMode'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            onPressed: _showSafetyInfo,
+            icon: const Icon(Icons.info_outline),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.health_and_safety_outlined, size: 38),
+                SizedBox(height: 12),
+                Text(
+                  'Safety First',
+                  style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Safety-focused controls and reminders for workouts at home, in a gym or outdoors.',
+                  style: TextStyle(height: 1.5),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined,
+                        color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Saved Workout Location',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_savedLocation != null) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          size: 18, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _savedLocation!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _clearSavedLocation,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Clear'),
+                    ),
+                  ),
+                ] else
+                  const Text(
+                    'No location saved yet.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed:
+                        _savingLocation ? null : _saveCurrentLocation,
+                    icon: _savingLocation
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location),
+                    label: Text(_savingLocation
+                        ? 'Getting Location...'
+                        : 'Save Current Location'),
+                  ),
+                ),
+                if (_savedLat != null && _savedLng != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _openInMaps,
+                          icon: const Icon(Icons.map_outlined, size: 18),
+                          label: const Text('Open in Maps'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _shareLocation,
+                          icon: const Icon(Icons.share_outlined, size: 18),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.person_outline,
+                        color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Trusted Contact',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_trustedContactName.isNotEmpty ||
+                    _trustedContactPhone.isNotEmpty) ...[
+                  if (_trustedContactName.isNotEmpty)
+                    Text('Name: $_trustedContactName',
+                        style: const TextStyle(fontSize: 14)),
+                  if (_trustedContactPhone.isNotEmpty)
+                    Text('Phone: $_trustedContactPhone',
+                        style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _callContact,
+                          icon:
+                              const Icon(Icons.phone_outlined, size: 18),
+                          label: const Text('Call'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _whatsappContact,
+                          icon: const Icon(Icons.chat_outlined,
+                              size: 18),
+                          label: const Text('WhatsApp'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _clearTrustedContact,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Clear'),
+                    ),
+                  ),
+                ],
+                TextField(
+                  controller: _contactNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _contactPhoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _saveTrustedContact,
+                    icon: const Icon(Icons.save_outlined),
+                    label: const Text('Save Contact'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Safety Controls',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('Workout Check-In Reminder'),
+                  subtitle: const Text('Remind me to check in after workouts'),
+                  value: workoutCheckIn,
+                  onChanged: _toggleCheckIn,
+                ),
+                SwitchListTile(
+                  title: const Text('Awareness Reminder'),
+                  subtitle: const Text('Stay aware of surroundings'),
+                  value: awarenessReminder,
+                  onChanged: (value) {
+                    setState(() => awarenessReminder = value);
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _quickExit,
+              icon: const Icon(Icons.exit_to_app_outlined),
+              label: const Text('Quick Exit'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// WOMEN'S HEART & METABOLIC HEALTH SCREEN
+// ================================================================
+
+class WomensHeartHealthScreen extends StatefulWidget {
+  const WomensHeartHealthScreen({super.key});
+
+  @override
+  State<WomensHeartHealthScreen> createState() =>
+      _WomensHeartHealthScreenState();
+}
+
+class _WomensHeartHealthScreenState extends State<WomensHeartHealthScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('womensHeartHealth'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('womensHeartHealth'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Heart and metabolic health activities for women. Focus on gentle cardiovascular care and balanced movement.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '❤️ Heart-Healthy Activities',
+            icon: Icons.monitor_heart_outlined,
+            items: [
+              'Comfortable walking — $walkDuration.',
+              'Step-ups — steady pace.',
+              'Gentle dance movement — light and joyful.',
+              'Standing stretch — gentle movement.',
+              'Cool-down walk — relaxed pace.',
+              'Keep intensity comfortable and sustainable.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Comfortable Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a comfortable pace. Maintain relaxed posture and breathe naturally.',
+            benefit: 'Supports cardiovascular health and daily energy',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Step-Ups',
+            durationOrReps: walkDuration,
+            instructions:
+                'Step up onto a low platform or stair with one foot, then bring the other foot up. Step down and repeat. Alternate leading foot.',
+            benefit: 'Builds leg strength and cardiovascular endurance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Dance Movement',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Put on your favorite music and move gently. Sway side to side, step lightly, and let your body move naturally. No intense choreography needed.',
+            benefit: 'Supports heart health and mood balance',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Standing Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and reach arms overhead. Gently stretch side to side. Roll shoulders and stretch arms across chest.',
+            benefit: 'Maintains flexibility and reduces tension',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace to cool down. Let heart rate return gradually to normal. Breathe deeply.',
+            benefit: 'Aids recovery and reduces muscle stiffness',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Heart health is individual. FitAI provides general wellness information. Consult a doctor for specific heart concerns.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S SLEEP & ENERGY WELLNESS SCREEN
+// ================================================================
+
+class MensSleepEnergyScreen extends StatefulWidget {
+  const MensSleepEnergyScreen({super.key});
+
+  @override
+  State<MensSleepEnergyScreen> createState() => _MensSleepEnergyScreenState();
+}
+
+class _MensSleepEnergyScreenState extends State<MensSleepEnergyScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensSleepEnergy'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensSleepEnergy'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Sleep quality and energy management for men. Gentle routines to support restful sleep and sustained daily energy.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🌙 Sleep & Energy Habits',
+            icon: Icons.bedtime_outlined,
+            items: [
+              'Keep a consistent sleep schedule — same bedtime and wake time daily.',
+              'Avoid screens 30 minutes before bed.',
+              'Gentle evening stretching — $mobilityDuration.',
+              'Limit caffeine after midday.',
+              'Short daylight walk — $walkDuration to boost energy.',
+              'Wind-down breathing before sleep.',
+            ],
+          ),
+
+          _WellnessSection(
+            title: '🏃 Energy-Supporting Activities',
+            icon: Icons.bolt_outlined,
+            items: [
+              'Gentle walking — relaxed pace.',
+              'Deep breathing walk — steady breathing rhythm.',
+              'Shoulder stretch — release upper body tension.',
+              'Mindful stretch — slow and controlled.',
+              'Cool-down walk — transition to rest.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Gentle Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed, easy pace. Focus on steady breathing and letting your body unwind. Ideal for evening routines.',
+            benefit: 'Supports better sleep quality and gentle energy renewal',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Deep Breathing Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk slowly while breathing in for 4 steps and out for 4 steps. Keep your attention on the rhythm of your breath.',
+            benefit: 'Calms the nervous system and improves oxygen flow',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Shoulder Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Roll shoulders forward and backward slowly. Stretch each arm across your chest. Hold each stretch for 15-20 seconds.',
+            benefit: 'Releases tension from the upper body and neck',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Mindful Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and slowly reach arms overhead. Bend gently side to side. Move through each stretch with full attention and slow breathing.',
+            benefit: 'Reduces stress and prepares the body for rest',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace to cool down. Let heart rate return gradually to normal. Breathe deeply.',
+            benefit: 'Aids recovery and reduces muscle stiffness',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Sleep and energy patterns are individual. FitAI provides general wellness information. Consult a doctor for persistent sleep or fatigue concerns.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// MEN'S PREVENTIVE HEALTH SCREEN
+// ================================================================
+
+class MensPreventiveHealthScreen extends StatefulWidget {
+  const MensPreventiveHealthScreen({super.key});
+
+  @override
+  State<MensPreventiveHealthScreen> createState() =>
+      _MensPreventiveHealthScreenState();
+}
+
+class _MensPreventiveHealthScreenState extends State<MensPreventiveHealthScreen> {
+  _WellnessProfile? profile;
+  UserProfile? _userProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loaded = await _WellnessProfile.load();
+    final userLoaded = await UserProfileService.instance.load();
+    if (!mounted) return;
+    setState(() {
+      profile = loaded;
+      _userProfile = userLoaded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+    final userProfile = _userProfile;
+
+    if (currentProfile == null || userProfile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final personalizer = _MealPersonalizer(userProfile);
+    final walkDuration = personalizer.personalizedWalkingDuration();
+    final mobilityDuration = personalizer.personalizedMobilityDuration();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          L.t('mensPreventiveHealth'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            L.t('mensPreventiveHealth'),
+            style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Preventive health and wellness awareness for men. Build healthy lifestyle habits and stay proactive about your well-being.',
+            style: TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 18),
+
+          _WellnessProfileCard(profile: currentProfile),
+
+          _WellnessSection(
+            title: '🩺 Preventive Health Habits',
+            icon: Icons.medical_services_outlined,
+            items: [
+              'Stay hydrated — aim for 8 glasses of water daily.',
+              'Schedule annual health check-ups.',
+              'Monitor blood pressure and cholesterol regularly.',
+              'Maintain a balanced diet rich in vegetables and lean protein.',
+              'Stay physically active — $walkDuration of walking daily.',
+              'Limit alcohol and avoid smoking.',
+            ],
+          ),
+
+          _WellnessSection(
+            title: '🏋️ General Wellness Activities',
+            icon: Icons.fitness_center_outlined,
+            items: [
+              'Brisk walking — $walkDuration.',
+              'Bodyweight squat — controlled form.',
+              'Wall push-up — upper body strength.',
+              'Standing stretch — flexibility maintenance.',
+              'Cool-down walk — relaxed pace.',
+            ],
+          ),
+
+          const Text(
+            'Activities',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Brisk Walking',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a brisk but comfortable pace. Keep your head up, shoulders relaxed, and arms swinging naturally.',
+            benefit: 'Supports overall cardiovascular and metabolic health',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Bodyweight Squat',
+            durationOrReps: '2 sets of ${personalizer.personalizedRepRange()}',
+            instructions:
+                'Stand with feet shoulder-width apart. Lower your hips back and down as if sitting in a chair. Keep chest up and knees behind toes. Push through heels to stand.',
+            benefit: 'Builds functional lower body strength',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Wall Push-Up',
+            durationOrReps: '2 sets of ${personalizer.personalizedRepRange()}',
+            instructions:
+                'Stand arm-length from a wall. Place hands on the wall at shoulder height. Bend elbows to bring chest toward the wall, then push back. Keep body straight.',
+            benefit: 'Supports upper body strength and joint health',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Standing Stretch',
+            durationOrReps: mobilityDuration,
+            instructions:
+                'Stand tall and reach arms overhead. Gently stretch side to side. Roll shoulders and stretch arms across chest.',
+            benefit: 'Maintains flexibility and reduces tension',
+          ),
+
+          _ExerciseVideoCard(
+            exerciseName: 'Cool-Down Walk',
+            durationOrReps: walkDuration,
+            instructions:
+                'Walk at a relaxed pace to cool down. Let heart rate return gradually to normal. Breathe deeply.',
+            benefit: 'Aids recovery and reduces muscle stiffness',
+          ),
+
+          const _WellnessNote(
+            text:
+                'Preventive health is individual. FitAI provides general wellness information. Consult a doctor for personalized health screenings and advice.',
+          ),
+        ],
+      ),
+    );
+  }
+}
